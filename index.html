@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>青灡居成本与进展管理（云端版）</title>
+  <title>青灡居成本与进展管理</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
   <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -24,21 +25,26 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // 🔥 替换为你的 Firebase 配置（从 Firebase 控制台获取）
-  const firebaseConfig = {
-    apiKey: "AIzaSyAXlAEJUHEagJ3GDHIFfJV9AnAAPAIAC8g",
-    authDomain: "qinglanju-9ca26.firebaseapp.com",
-    databaseURL: "https://qinglanju-9ca26-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "qinglanju-9ca26",
-    storageBucket: "qinglanju-9ca26.firebasestorage.app",
-    messagingSenderId: "172568618102",
-    appId: "1:172568618102:web:6887b8d89cc894c9642b57"
-  };
+    // 🔥 Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyAXlAEJUHEagJ3GDHIFfJV9AnAAPAIAC8g",
+      authDomain: "qinglanju-9ca26.firebaseapp.com",
+      databaseURL: "https://qinglanju-9ca26-default-rtdb.firebaseio.com",
+      projectId: "qinglanju-9ca26",
+      storageBucket: "qinglanju-9ca26.firebasestorage.app",
+      messagingSenderId: "172568618102",
+      appId: "1:172568618102:web:6887b8d89cc894c9642b57"
+    };
+
     // 初始化 Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
+    const auth = firebase.auth();
     const db = firebase.database();
+
+    // 管理员邮箱列表（可扩展为数据库存储）
+    const ADMIN_EMAILS = ["admin@qinglanju.com", "manager@qinglanju.com"];
 
     const defaultCategories = [
       '院墙', '外院', '内院', '下沉庭院', '负一楼', '正房', '东厢房', '西厢房',
@@ -47,6 +53,159 @@
     ];
 
     function App() {
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [isLogin, setIsLogin] = useState(true);
+      const [error, setError] = useState('');
+      const [showReset, setShowReset] = useState(false);
+
+      useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          setUser(user);
+          setLoading(false);
+        });
+        return () => unsubscribe();
+      }, []);
+
+      const isManager = user && ADMIN_EMAILS.includes(user.email);
+
+      if (loading) return <div className="p-8 text-center">加载中...</div>;
+
+      if (!user) {
+        return (
+          <AuthPage
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            isLogin={isLogin}
+            setIsLogin={setIsLogin}
+            error={error}
+            setError={setError}
+            showReset={showReset}
+            setShowReset={setShowReset}
+          />
+        );
+      }
+
+      return (
+        <MainApp
+          user={user}
+          isManager={isManager}
+          onLogout={() => auth.signOut()}
+          ADMIN_EMAILS={ADMIN_EMAILS}
+        />
+      );
+    }
+
+    // 登录/注册页面
+    function AuthPage({ email, setEmail, password, setPassword, isLogin, setIsLogin, error, setError, showReset, setShowReset }) {
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+          if (showReset) {
+            await auth.sendPasswordResetEmail(email);
+            alert('重置密码链接已发送至邮箱');
+            setShowReset(false);
+          } else if (isLogin) {
+            await auth.signInWithEmailAndPassword(email, password);
+          } else {
+            await auth.createUserWithEmailAndPassword(email, password);
+            // 新用户自动创建默认 categories
+            const userId = auth.currentUser.uid;
+            const userRef = db.ref(`users/${userId}`);
+            const snapshot = await userRef.once('value');
+            if (!snapshot.val()) {
+              await userRef.set({
+                categories: defaultCategories.map((name, index) => ({
+                  id: (index + 1).toString(),
+                  name,
+                  isDefault: true
+                })),
+                createdAt: new Date().toISOString()
+              });
+            }
+          }
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-blue-50 p-4">
+          <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">
+              {showReset ? '重置密码' : isLogin ? '登录' : '注册'}
+            </h2>
+
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">邮箱</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border rounded p-2"
+                  placeholder="your@company.com"
+                />
+              </div>
+              {!showReset && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">密码</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full border rounded p-2"
+                    minLength="6"
+                  />
+                </div>
+              )}
+
+              {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+              <div className="space-y-3">
+                <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+                  {showReset ? '发送重置链接' : isLogin ? '登录' : '注册'}
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsLogin(!isLogin)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
+                  >
+                    {isLogin ? '去注册' : '去登录'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReset(!showReset)}
+                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
+                  >
+                    {showReset ? '返回登录' : '忘记密码？'}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>示例账号：</p>
+              <p>管理员: <code>admin@qinglanju.com</code></p>
+              <p>普通用户: <code>user@qinglanju.com</code></p>
+              <p>密码: <code>123456</code></p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 主应用
+    function MainApp({ user, isManager, onLogout, ADMIN_EMAILS }) {
       const [projects, setProjects] = useState([]);
       const [details, setDetails] = useState([]);
       const [categories, setCategories] = useState([]);
@@ -70,88 +229,98 @@
       });
       const [importModal, setImportModal] = useState(false);
       const [file, setFile] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
+      const [manageUsers, setManageUsers] = useState(false); // 管理员功能
 
       const projectStatuses = [
         '项目规划中', '项目已启动', '框架建设中', '框架已完成', '项目装修中', '项目已完成'
       ];
 
       useEffect(() => {
-        loadData();
-      }, []);
+        loadUserData();
+      }, [user]);
 
-      const loadData = async () => {
-        setLoading(true);
-        try {
-          db.ref('qinglanju/data').on('value', (snapshot) => {
-            const data = snapshot.val() || {
-              projects: [],
-              details: [],
-              categories: defaultCategories.map((name, index) => ({
-                id: (index + 1).toString(),
-                name,
-                isDefault: true
-              }))
-            };
-            setProjects(data.projects || []);
-            setDetails(data.details || []);
-            setCategories(data.categories || []);
-            setLoading(false);
-          });
-        } catch (err) {
-          setError('数据加载失败，请检查网络或 Firebase 配置');
-          setLoading(false);
-        }
+      const loadUserData = async () => {
+        const userId = user.uid;
+        const userRef = db.ref(`users/${userId}`);
+        const snapshot = await userRef.once('value');
+        const userData = snapshot.val() || {
+          categories: defaultCategories.map((name, index) => ({
+            id: (index + 1).toString(),
+            name,
+            isDefault: true
+          }))
+        };
+        setCategories(userData.categories || []);
+
+        // 加载项目：管理员看所有，普通用户看自己的
+        const projectsRef = isManager
+          ? db.ref('projects')
+          : db.ref('projects').orderByChild('userId').equalTo(userId);
+
+        projectsRef.on('value', (snapshot) => {
+          const data = snapshot.val() || {};
+          const projectList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+          setProjects(projectList);
+        });
+
+        // 加载明细
+        db.ref('details').orderByChild('projectId').on('value', (snapshot) => {
+          const data = snapshot.val() || {};
+          const detailList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+          setDetails(detailList);
+        });
       };
 
-      const saveData = async (projects, details, categories) => {
-        try {
-          await db.ref('qinglanju/data').set({ projects, details, categories });
-        } catch (err) {
-          console.error('保存失败:', err);
-          throw err;
-        }
+      const saveData = async (path, data) => {
+        await db.ref(path).set(data);
       };
 
       const addProject = async (project) => {
         const newProject = {
-          id: Date.now().toString(),
           name: project.name,
           status: project.status,
           budgetValue: parseFloat(project.budgetValue) || 0,
           budgetUsed: 0,
-          progressPercent: 0
+          progressPercent: 0,
+          userId: user.uid,
+          createdAt: new Date().toISOString()
         };
-        const newProjects = [...projects, newProject];
-        setProjects(newProjects);
-        await saveData(newProjects, details, categories);
+        const ref = db.ref('projects').push();
+        await ref.set(newProject);
+        const projectWithId = { id: ref.key, ...newProject };
+        setProjects(prev => [...prev, projectWithId]);
       };
 
       const updateProject = async (updatedProject) => {
-        const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
-        setProjects(newProjects);
-        const projectDetails = details.filter(d => d.projectId === updatedProject.id);
+        const { id, ...data } = updatedProject;
+        await db.ref(`projects/${id}`).set(data);
+        setProjects(prev => prev.map(p => p.id === id ? { id, ...data } : p));
+
+        // 更新预算使用
+        const projectDetails = details.filter(d => d.projectId === id);
         const totalUsed = projectDetails.reduce((sum, d) => sum + (parseFloat(d.currentCost) || 0), 0);
-        const progress = updatedProject.budgetValue > 0 ? (totalUsed / updatedProject.budgetValue) * 100 : 0;
-        const finalProject = { ...updatedProject, budgetUsed: totalUsed, progressPercent: progress };
-        const finalProjects = newProjects.map(p => p.id === finalProject.id ? finalProject : p);
-        setProjects(finalProjects);
-        await saveData(finalProjects, details, categories);
+        const progress = data.budgetValue > 0 ? (totalUsed / data.budgetValue) * 100 : 0;
+        const finalData = { ...data, budgetUsed: totalUsed, progressPercent: progress };
+        await db.ref(`projects/${id}`).set(finalData);
+        setProjects(prev => prev.map(p => p.id === id ? { id, ...finalData } : p));
       };
 
       const deleteProject = async (id) => {
         if (!window.confirm('确认要删除项目吗？该操作将同时删除其所有明细记录，且无法恢复。')) return;
-        const newProjects = projects.filter(p => p.id !== id);
-        const newDetails = details.filter(d => d.projectId !== id);
-        setProjects(newProjects);
-        setDetails(newDetails);
-        await saveData(newProjects, newDetails, categories);
+        await db.ref(`projects/${id}`).remove();
+        await db.ref('details').orderByChild('projectId').equalTo(id).once('value', (snapshot) => {
+          const updates = {};
+          snapshot.forEach(child => {
+            updates[child.key] = null;
+          });
+          db.ref('details').update(updates);
+        });
+        setProjects(prev => prev.filter(p => p.id !== id));
+        setDetails(prev => prev.filter(d => d.projectId !== id));
       };
 
       const addDetail = async (detail) => {
         const newDetail = {
-          id: Date.now().toString(),
           projectId: currentProjectId,
           detailName: detail.detailName,
           categoryId: detail.categoryId,
@@ -159,58 +328,57 @@
           budgetQuantity: parseFloat(detail.budgetQuantity) || 0,
           budgetCost: parseFloat(detail.budgetCost) || 0,
           currentQuantity: parseFloat(detail.currentQuantity) || 0,
-          currentCost: parseFloat(detail.currentCost) || 0
+          currentCost: parseFloat(detail.currentCost) || 0,
+          createdAt: new Date().toISOString()
         };
-        const newDetails = [...details, newDetail];
-        setDetails(newDetails);
+        const ref = db.ref('details').push();
+        await ref.set(newDetail);
+        const detailWithId = { id: ref.key, ...newDetail };
+        setDetails(prev => [...prev, detailWithId]);
 
+        // 更新项目
         const project = projects.find(p => p.id === currentProjectId);
         if (project) {
-          const totalUsed = newDetails
+          const totalUsed = [...details, detailWithId]
             .filter(d => d.projectId === currentProjectId)
             .reduce((sum, d) => sum + d.currentCost, 0);
           const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
           const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
           updateProject(updatedProject);
         }
-
-        await saveData(projects, newDetails, categories);
       };
 
       const updateDetail = async (updatedDetail) => {
-        const newDetails = details.map(d => d.id === updatedDetail.id ? updatedDetail : d);
-        setDetails(newDetails);
+        const { id, ...data } = updatedDetail;
+        await db.ref(`details/${id}`).set(data);
+        setDetails(prev => prev.map(d => d.id === id ? { id, ...data } : d));
 
         const project = projects.find(p => p.id === updatedDetail.projectId);
         if (project) {
-          const totalUsed = newDetails
+          const totalUsed = details
             .filter(d => d.projectId === updatedDetail.projectId)
             .reduce((sum, d) => sum + d.currentCost, 0);
           const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
           const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
           updateProject(updatedProject);
         }
-
-        await saveData(projects, newDetails, categories);
       };
 
       const deleteDetail = async (id) => {
         if (!window.confirm('确认删除此明细？')) return;
         const detail = details.find(d => d.id === id);
-        const newDetails = details.filter(d => d.id !== id);
-        setDetails(newDetails);
+        await db.ref(`details/${id}`).remove();
+        setDetails(prev => prev.filter(d => d.id !== id));
 
         const project = projects.find(p => p.id === detail.projectId);
         if (project) {
-          const totalUsed = newDetails
-            .filter(d => d.projectId === detail.projectId)
+          const totalUsed = details
+            .filter(d => d.projectId === detail.projectId && d.id !== id)
             .reduce((sum, d) => sum + d.currentCost, 0);
           const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
           const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
           updateProject(updatedProject);
         }
-
-        await saveData(projects, newDetails, categories);
       };
 
       const importCSV = (event) => {
@@ -231,7 +399,6 @@
           const newDetails = json.map(row => {
             const cat = categories.find(c => c.name === row.分项名称);
             return {
-              id: Date.now() + Math.random().toString(36).substr(2, 9),
               projectId: currentProjectId,
               detailName: row.详细名称 || '未命名',
               categoryId: cat ? cat.id : categories[0]?.id || '1',
@@ -239,16 +406,22 @@
               budgetQuantity: parseFloat(row.预算用量) || 0,
               budgetCost: parseFloat(row.预算费用) || 0,
               currentQuantity: parseFloat(row.当前使用量) || 0,
-              currentCost: parseFloat(row.当前使用费用) || 0
+              currentCost: parseFloat(row.当前使用费用) || 0,
+              createdAt: new Date().toISOString()
             };
           }).filter(d => d.detailName !== '未命名');
 
-          const mergedDetails = [...details, ...newDetails];
-          setDetails(mergedDetails);
+          const batch = {};
+          newDetails.forEach(detail => {
+            const ref = db.ref('details').push();
+            batch[ref.key] = detail;
+          });
+          await db.ref('details').update(batch);
+          setDetails(prev => [...prev, ...Object.values(batch).map((d, i) => ({ id: Object.keys(batch)[i], ...d }))]);
 
           const project = projects.find(p => p.id === currentProjectId);
           if (project) {
-            const totalUsed = mergedDetails
+            const totalUsed = [...details, ...Object.values(batch)]
               .filter(d => d.projectId === currentProjectId)
               .reduce((sum, d) => sum + d.currentCost, 0);
             const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
@@ -256,7 +429,6 @@
             updateProject(updatedProject);
           }
 
-          await saveData(projects, mergedDetails, categories);
           setImportModal(false);
           setFile(null);
           alert('导入成功！');
@@ -266,26 +438,9 @@
 
       const downloadTemplate = () => {
         const templateData = [
-          {
-            详细名称: '北侧院墙砌筑',
-            分项名称: '院墙',
-            预算面积: 50,
-            预算用量: 100,
-            预算费用: 8000,
-            当前使用量: 95,
-            当前使用费用: 7600
-          },
-          {
-            详细名称: '电源布线安装',
-            分项名称: '电源系统',
-            预算面积: '',
-            预算用量: 200,
-            预算费用: 15000,
-            当前使用量: 190,
-            当前使用费用: 14500
-          }
+          { 详细名称: '北侧院墙砌筑', 分项名称: '院墙', 预算面积: 50, 预算用量: 100, 预算费用: 8000, 当前使用量: 95, 当前使用费用: 7600 },
+          { 详细名称: '电源布线安装', 分项名称: '电源系统', 预算面积: '', 预算用量: 200, 预算费用: 15000, 当前使用量: 190, 当前使用费用: 14500 }
         ];
-
         const ws = XLSX.utils.json_to_sheet(templateData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '明细导入');
@@ -318,28 +473,27 @@
         categoryStats[name].currentQuantity += d.currentQuantity;
       });
 
-      if (loading) return <div className="p-8 text-center">加载中...</div>;
-      if (error) return <div className="p-8 text-red-500 text-center">{error}</div>;
-
       return (
         <div className="min-h-screen">
           <header className="bg-white shadow-sm p-4 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-blue-600">青灡居（云端版）</h1>
-            {currentView === 'projects' ? (
+            <h1 className="text-xl font-bold text-blue-600">青灡居</h1>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                {isManager ? '管理员' : '用户'}: {user.email}
+              </span>
               <button
-                onClick={() => setShowAddProject(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm shadow"
+                onClick={() => setManageUsers(true)}
+                className="text-xs bg-gray-200 px-2 py-1 rounded"
               >
-                + 新增项目
+                用户管理
               </button>
-            ) : (
               <button
-                onClick={() => setCurrentView('projects')}
-                className="text-blue-500 text-sm"
+                onClick={onLogout}
+                className="text-red-500 text-sm"
               >
-                ← 返回项目
+                退出
               </button>
-            )}
+            </div>
           </header>
 
           {currentView === 'projects' && (
@@ -355,7 +509,7 @@
                 </select>
               </div>
               {filteredProjects.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">暂无项目，点击右上角添加</p>
+                <p className="text-gray-500 text-center py-8">暂无项目</p>
               ) : (
                 filteredProjects.map(p => (
                   <div key={p.id} className="bg-white p-4 mb-4 rounded-lg shadow">
@@ -398,6 +552,12 @@
                   </div>
                 ))
               )}
+              <button
+                onClick={() => setShowAddProject(true)}
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-full text-sm shadow"
+              >
+                + 新增项目
+              </button>
             </div>
           )}
 
@@ -467,7 +627,7 @@
               </div>
 
               {filteredDetails.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">暂无明细，点击“新增明细”添加</p>
+                <p className="text-gray-500 text-center py-8">暂无明细</p>
               ) : (
                 filteredDetails.map(d => {
                   const cat = categories.find(c => c.id === d.categoryId);
@@ -561,6 +721,14 @@
                 </div>
               </div>
             </div>
+          )}
+
+          {manageUsers && (
+            <UserManagement
+              onClose={() => setManageUsers(false)}
+              user={user}
+              ADMIN_EMAILS={ADMIN_EMAILS}
+            />
           )}
         </div>
       );
@@ -756,6 +924,70 @@
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      );
+    }
+
+    function UserManagement({ onClose, user, ADMIN_EMAILS }) {
+      const [users, setUsers] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        // 模拟从 Realtime Database 读取用户列表（实际需 Admin SDK）
+        db.ref('users').once('value').then(snapshot => {
+          const data = snapshot.val() || {};
+          const userList = Object.keys(data).map(key => ({
+            uid: key,
+            email: key, // 简化：uid = email
+            createdAt: data[key].createdAt
+          }));
+          setUsers(userList);
+          setLoading(false);
+        });
+      }, []);
+
+      const deleteUser = async (uid, email) => {
+        if (!window.confirm(`确认删除用户 ${email}？`)) return;
+        // 实际删除需 Admin SDK，此处仅提示
+        alert('请在 Firebase 控制台手动删除用户');
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">用户管理</h3>
+            {loading ? (
+              <p>加载中...</p>
+            ) : (
+              <div className="space-y-2">
+                {users.map(u => (
+                  <div key={u.uid} className="flex justify-between items-center p-2 border rounded">
+                    <div>
+                      <p className="font-medium">{u.email}</p>
+                      <p className="text-xs text-gray-500">{new Date(u.createdAt).toLocaleString()}</p>
+                    </div>
+                    {(ADMIN_EMAILS.includes(user.email) && user.email !== u.email) && (
+                      <button
+                        onClick={() => deleteUser(u.uid, u.email)}
+                        className="text-red-500 text-sm"
+                      >
+                        删除
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-4">
+              提示：删除用户需在 Firebase 控制台操作
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-4 w-full bg-gray-300 text-black py-2 rounded"
+            >
+              关闭
+            </button>
           </div>
         </div>
       );
