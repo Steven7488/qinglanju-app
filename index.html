@@ -1,0 +1,3636 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>青灡居成本与进展管理</title>
+  <!-- 添加空favicon避免404错误 -->
+  <link rel="icon" href=";base64,=">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- 添加XLSX库用于导出功能 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* 基础重置 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* 响应式容器 - 桌面浏览器模拟iPhone 15 Plus Max */
+    .device-frame {
+      position: relative;
+      margin: 0 auto;
+      border-radius: 50px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      transition: all 0.3s ease;
+    }
+    
+    .device-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: linear-gradient(to bottom, #000, transparent);
+      z-index: 10;
+      pointer-events: none;
+    }
+    
+    .device-frame::after {
+      content: '';
+      position: absolute;
+      top: 44px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    .device-content {
+      position: relative;
+      z-index: 2;
+      background-color: #f8fafc;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    /* 移动设备样式 */
+    @media (min-width: 768px) {
+      .device-frame {
+        width: 430px;
+        height: 932px;
+        border: 10px solid #000;
+        margin-top: 30px;
+      }
+      
+      .device-content {
+        border-radius: 44px;
+        overflow: hidden;
+      }
+    }
+    
+    /* 基础样式 */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      margin: 0;
+    }
+    
+    /* 内联关键 CSS */
+    .p-2 { padding: 0.5rem; }
+    .p-4 { padding: 1rem; }
+    .p-6 { padding: 1.5rem; }
+    .p-8 { padding: 2rem; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-3 { margin-top: 0.75rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mt-6 { margin-top: 1.5rem; }
+    .flex { display: flex; }
+    .block { display: block; }
+    .inline-block { display: inline-block; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: 700; }
+    .font-medium { font-weight: 500; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .bg-white { background-color: #ffffff; }
+    .bg-blue-50 { background-color: #dbeafe; }
+    .bg-blue-100 { background-color: #bfdbfe; }
+    .bg-blue-500 { background-color: #3b82f6; }
+    .bg-blue-600 { background-color: #2563eb; }
+    .bg-gray-50 { background-color: #f8fafc; }
+    .bg-gray-100 { background-color: #f1f5f9; }
+    .bg-gray-200 { background-color: #e2e8f0; }
+    .bg-gray-300 { background-color: #cbd5e1; }
+    .bg-red-50 { background-color: #fef2f2; }
+    .bg-red-100 { background-color: #fee2e2; }
+    .bg-red-500 { background-color: #ef4444; }
+    .bg-red-600 { background-color: #dc2626; }
+    .bg-green-50 { background-color: #f0fdf4; }
+    .bg-green-100 { background-color: #dcfce7; }
+    .bg-green-500 { background-color: #22c55e; }
+    .bg-green-600 { background-color: #16a34a; }
+    .bg-yellow-50 { background-color: #fffbeb; }
+    .bg-yellow-100 { background-color: #fef3c7; }
+    .bg-yellow-500 { background-color: #eab308; }
+    .bg-yellow-600 { background-color: #ca8a04; }
+    .bg-purple-50 { background-color: #f5f3ff; }
+    .bg-purple-100 { background-color: #ede9fe; }
+    .bg-purple-500 { background-color: #a855f7; }
+    .bg-purple-600 { background-color: #9333ea; }
+    .text-blue-500 { color: #3b82f6; }
+    .text-blue-600 { color: #2563eb; }
+    .text-gray-400 { color: #94a3b8; }
+    .text-gray-500 { color: #64748b; }
+    .text-gray-600 { color: #475569; }
+    .text-gray-700 { color: #334155; }
+    .text-gray-800 { color: #1e293b; }
+    .text-red-500 { color: #ef4444; }
+    .text-red-600 { color: #dc2626; }
+    .text-green-600 { color: #16a34a; }
+    .text-yellow-600 { color: #ca8a04; }
+    .text-purple-600 { color: #9333ea; }
+    .text-white { color: #ffffff; }
+    .rounded { border-radius: 0.25rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-full { border-radius: 9999px; }
+    .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    .shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+    .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .border { border-width: 1px; }
+    .border-0 { border-width: 0; }
+    .border-t { border-top-width: 1px; }
+    .border-b { border-bottom-width: 1px; }
+    .border-l { border-left-width: 1px; }
+    .border-r { border-right-width: 1px; }
+    .border-gray-200 { border-color: #e2e8f0; }
+    .border-gray-300 { border-color: #cbd5e1; }
+    .w-full { width: 100%; }
+    .max-w-md { max-width: 28rem; }
+    .max-w-lg { max-width: 32rem; }
+    .max-w-xl { max-width: 36rem; }
+    .max-w-2xl { max-width: 42rem; }
+    .h-6 { height: 1.5rem; }
+    .h-full { height: 100%; }
+    .overflow-y-auto { overflow-y: auto; }
+    .fixed { position: fixed; }
+    .sticky { position: sticky; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .z-0 { z-index: 0; }
+    .z-10 { z-index: 10; }
+    .z-20 { z-index: 20; }
+    .z-50 { z-index: 50; }
+    .space-y-1 > * + * { margin-top: 0.25rem; }
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .cursor-pointer { cursor: pointer; }
+    .opacity-50 { opacity: 0.5; }
+    .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
+    .grid { display: grid; }
+    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .col-span-1 { grid-column: span 1 / span 1; }
+    
+    .progress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #2563eb; transition: width 0.3s; }
+    
+    /* 专业按钮系统 - 完全重写 */
+    .btn {
+      transition: all 0.2s ease;
+      font-weight: 500;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+    }
+    
+    /* 主要按钮 - 深蓝色 */
+    .btn-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(37, 99, 235, 0.25);
+    }
+    
+    .btn-primary:active {
+      background-color: #1e40af;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+    }
+    
+    /* 次要按钮 - 浅蓝色 */
+    .btn-secondary {
+      background-color: #dbeafe;
+      color: #1e40af;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #bfdbfe;
+    }
+    
+    .btn-secondary:active {
+      background-color: #93c5fd;
+    }
+    
+    /* 危险按钮 - 深红色 */
+    .btn-danger {
+      background-color: #dc2626;
+      color: #ffffff;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    
+    .btn-danger:hover {
+      background-color: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(220, 38, 38, 0.25);
+    }
+    
+    .btn-danger:active {
+      background-color: #991b1b;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(220, 38, 38, 0.15);
+    }
+    
+    /* 成功按钮 - 深绿色 */
+    .btn-success {
+      background-color: #16a34a;
+      color: #ffffff;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+    }
+    
+    .btn-success:hover {
+      background-color: #15803d;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(22, 163, 74, 0.25);
+    }
+    
+    .btn-success:active {
+      background-color: #166534;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(22, 163, 74, 0.15);
+    }
+    
+    /* 警告按钮 - 深黄色 */
+    .btn-warning {
+      background-color: #ca8a04;
+      color: #ffffff;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(202, 138, 4, 0.2);
+    }
+    
+    .btn-warning:hover {
+      background-color: #a16207;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(202, 138, 4, 0.25);
+    }
+    
+    .btn-warning:active {
+      background-color: #854d0e;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(202, 138, 4, 0.15);
+    }
+    
+    /* 透明按钮 - 仅文字 */
+    .btn-transparent {
+      background-color: transparent;
+      color: #1e293b;
+      padding: 0 16px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    
+    .btn-transparent:hover {
+      background-color: #f1f5f9;
+    }
+    
+    .btn-transparent:active {
+      background-color: #e2e8f0;
+    }
+    
+    /* 移动设备优化 */
+    .mobile-button {
+      min-height: 40px;
+      padding: 0 12px;
+      font-size: 14px;
+      border-radius: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+    }
+    
+    /* 主要按钮优化 */
+    .btn-primary, .mobile-button.bg-blue-600 {
+      background-color: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+    
+    .btn-primary:hover, .mobile-button.bg-blue-600:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(37, 99, 235, 0.25);
+    }
+    
+    .btn-primary:active, .mobile-button.bg-blue-600:active {
+      background-color: #1e40af;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+    }
+    
+    /* 次要按钮优化 */
+    .btn-secondary, .mobile-button.bg-gray-200 {
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+    
+    .btn-secondary:hover, .mobile-button.bg-gray-200:hover {
+      background-color: #e2e8f0;
+    }
+    
+    .btn-secondary:active, .mobile-button.bg-gray-200:active {
+      background-color: #cbd5e1;
+    }
+    
+    /* 危险按钮优化 */
+    .btn-danger, .mobile-button.bg-red-600 {
+      background-color: #dc2626;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    
+    .btn-danger:hover, .mobile-button.bg-red-600:hover {
+      background-color: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(220, 38, 38, 0.25);
+    }
+    
+    .btn-danger:active, .mobile-button.bg-red-600:active {
+      background-color: #991b1b;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(220, 38, 38, 0.15);
+    }
+    
+    /* 成功按钮优化 */
+    .btn-success, .mobile-button.bg-green-600 {
+      background-color: #16a34a;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+    }
+    
+    .btn-success:hover, .mobile-button.bg-green-600:hover {
+      background-color: #15803d;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(22, 163, 74, 0.25);
+    }
+    
+    .btn-success:active, .mobile-button.bg-green-600:active {
+      background-color: #166534;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(22, 163, 74, 0.15);
+    }
+    
+    /* 警告按钮优化 */
+    .btn-warning, .mobile-button.bg-yellow-600 {
+      background-color: #ca8a04;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(202, 138, 4, 0.2);
+    }
+    
+    .btn-warning:hover, .mobile-button.bg-yellow-600:hover {
+      background-color: #a16207;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(202, 138, 4, 0.25);
+    }
+    
+    .btn-warning:active, .mobile-button.bg-yellow-600:active {
+      background-color: #854d0e;
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(202, 138, 4, 0.15);
+    }
+    
+    /* 透明按钮优化 */
+    .btn-transparent, .mobile-button.bg-transparent {
+      background-color: transparent;
+      color: #1e293b;
+    }
+    
+    .btn-transparent:hover, .mobile-button.bg-transparent:hover {
+      background-color: #f1f5f9;
+    }
+    
+    .btn-transparent:active, .mobile-button.bg-transparent:active {
+      background-color: #e2e8f0;
+    }
+    
+    /* 按钮组样式 */
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .button-group .mobile-button {
+      flex: 1;
+    }
+    
+    /* 移动设备样式 */
+    .mobile-input {
+      min-height: 40px;
+      padding: 0 12px;
+      font-size: 14px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+      color: #1e293b;
+      transition: all 0.2s ease;
+    }
+    
+    .mobile-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .mobile-card {
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .mobile-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-header {
+      padding: 12px;
+      background-color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+    
+    .mobile-footer {
+      padding: 12px;
+      background-color: #ffffff;
+      box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 项目状态标签样式 - 优化对比度 */
+    .status-planning { background-color: #dbeafe; color: #1e40af; }
+    .status-started { background-color: #dcfce7; color: #166534; }
+    .status-framing { background-color: #fffbeb; color: #b45309; }
+    .status-framed { background-color: #fef9c3; color: #a16207; }
+    .status-renovation { background-color: #ffedd5; color: #c2410c; }
+    .status-completed { background-color: #ede9fe; color: #7e22ce; }
+    
+    /* 状态标签 */
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    
+    /* 输入框优化 */
+    .input, .mobile-input {
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    
+    /* 表单标签优化 */
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+    }
+    
+    /* 表单组 */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    /* 卡片优化 */
+    .card {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 加载指示器 */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 错误消息样式 */
+    .error-message {
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    
+    /* 成功消息样式 */
+    .success-message {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    
+    /* 卡片标题 */
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    
+    /* 项目卡片样式 */
+    .project-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .project-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* 明细卡片样式 */
+    .detail-card {
+      transition: background-color 0.2s ease;
+    }
+    
+    .detail-card:hover {
+      background-color: #f8fafc;
+    }
+    
+    /* 代码块样式 */
+    code {
+      background-color: #f1f5f9;
+      border-radius: 6px;
+      padding: 2px 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.875em;
+      color: #1e293b;
+    }
+    
+    /* 优化字体层次 */
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.3;
+    }
+    
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+    
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+    
+    p {
+      color: #475569;
+      line-height: 1.6;
+    }
+    
+    /* 优化表格行 */
+    .table-row {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table-row:last-child {
+      border-bottom: none;
+    }
+    
+    .table-row:hover {
+      background-color: #f8fafc;
+    }
+    
+    /* 优化进度条 */
+    .progress-bar {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #2563eb;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    /* 优化卡片内边距 */
+    .card-content {
+      padding: 12px;
+    }
+    
+    /* 优化按钮间距 */
+    .btn-spaced {
+      margin-top: 6px;
+    }
+    
+    /* 优化弹出层 */
+    .mobile-modal {
+      border-radius: 16px 16px 0 0;
+      max-height: 90vh;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .modal-header {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .modal-content {
+      padding: 12px;
+    }
+    
+    .modal-footer {
+      padding: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+    
+    /* 优化分页 */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 16px;
+    }
+    
+    .pagination-item {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .pagination-item.active {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+    
+    .pagination-item:hover:not(.active) {
+      background-color: #f1f5f9;
+    }
+    
+    /* 优化项目状态颜色 - 提高对比度 */
+    .status-planning { background-color: #dbeafe; color: #1e40af; }
+    .status-started { background-color: #dcfce7; color: #166534; }
+    .status-framing { background-color: #fffbeb; color: #b45309; }
+    .status-framed { background-color: #fef9c3; color: #a16207; }
+    .status-renovation { background-color: #ffedd5; color: #c2410c; }
+    .status-completed { background-color: #ede9fe; color: #7e22ce; }
+    
+    /* 优化文字大小 */
+    .text-xs { font-size: 0.75rem; line-height: 1.25; }
+    .text-sm { font-size: 0.875rem; line-height: 1.5; }
+    .text-base { font-size: 1rem; line-height: 1.5; }
+    .text-lg { font-size: 1.125rem; line-height: 1.5; }
+    .text-xl { font-size: 1.25rem; line-height: 1.5; }
+    
+    /* 优化输入框标签 */
+    .input-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #334155;
+      font-size: 13px;
+    }
+    
+    /* 优化表单布局 */
+    .form-row {
+      margin-bottom: 16px;
+    }
+    
+    .form-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* 优化卡片标题 */
+    .card-header {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      background-color: #f8fafc;
+    }
+    
+    .card-body {
+      padding: 12px;
+    }
+    
+    /* 优化项目列表 */
+    .project-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    
+    /* 优化明细列表 */
+    .detail-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    
+    /* 优化导航栏 */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background-color: #ffffff;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .nav-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    /* 优化用户信息 */
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background-color: #f1f5f9;
+      font-size: 13px;
+      color: #475569;
+    }
+    
+    /* 优化项目卡片内容 */
+    .project-content {
+      padding: 12px;
+    }
+    
+    .project-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    
+    .project-status {
+      margin-bottom: 10px;
+    }
+    
+    .project-budget {
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    
+    .project-progress {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    /* 优化明细卡片内容 */
+    .detail-content {
+      padding: 12px;
+    }
+    
+    .detail-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    
+    .detail-category {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+    
+    .detail-budget {
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    
+    /* 优化按钮大小 */
+    .btn-sm {
+      min-height: 36px;
+      padding: 0 10px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+    
+    .btn-lg {
+      min-height: 50px;
+      padding: 0 20px;
+      font-size: 16px;
+      border-radius: 16px;
+    }
+    
+    /* 优化表单布局 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    
+    @media (min-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    /* 优化卡片内间距 */
+    .card-inner {
+      padding: 12px;
+    }
+    
+    /* 优化项目状态显示 */
+    .status-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    
+    /* 优化表格行 */
+    .table-row {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table-row:last-child {
+      border-bottom: none;
+    }
+    
+    .table-row:hover {
+      background-color: #f8fafc;
+    }
+    
+    /* 优化加载状态 */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      min-height: 150px;
+    }
+    
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(37, 99, 235, 0.2);
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 12px;
+    }
+    
+    .loading-text {
+      color: #64748b;
+      font-size: 13px;
+    }
+    
+    /* 优化空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 24px 12px;
+      color: #64748b;
+    }
+    
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      color: #cbd5e1;
+    }
+    
+    .empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    
+    .empty-description {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    /* 细项按钮区域 */
+    .detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+    }
+    
+    /* 操作区域 */
+    .action-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    /* 预算和进度操作区域 */
+    .budget-progress-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 8px 0;
+      border-top: 1px solid #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+  <div id="device-container" class="device-frame">
+    <div class="device-content safe-area-top safe-area-bottom safe-area-left safe-area-right">
+      <div id="root"></div>
+    </div>
+  </div>
+  
+  <script>
+    // 确保这是一个独立的代码块，没有多余字符
+    (function() {
+      'use strict';
+      
+      // 获取React hooks
+      var useState = React.useState;
+      var useEffect = React.useEffect;
+      var useRef = React.useRef;
+      
+      // Firebase 配置
+      var firebaseConfig = {
+        apiKey: "AIzaSyAXlAEJUHEagJ3GDHIFfJV9AnAAPAIAC8g",
+        authDomain: "qinglanju-9ca26.firebaseapp.com",
+        databaseURL: "https://qinglanju-9ca26-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "qinglanju-9ca26",
+        storageBucket: "qinglanju-9ca26.firebasestorage.app",
+        messagingSenderId: "172568618102",
+        appId: "1:172568618102:web:6887b8d89cc894c9642b57"
+      };
+
+      // 初始化 Firebase
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      var auth = firebase.auth();
+      var db = firebase.database();
+
+      // 管理员邮箱
+      var ADMIN_EMAILS = ["admin@qinglanju.com", "manager@qinglanju.com"];
+
+      // 默认分项
+      var defaultCategories = [
+        '院墙', '外院', '内院', '下沉庭院', '负一楼', '正房', '东厢房', '西厢房',
+        '洗衣房', '菜园', '化粪池', '户外公共卫生间', '假山温泉', '进水系统',
+        '电源系统', '雨水排水系统', '污水系统', '厨房排水系统'
+      ];
+
+      function App() {
+        // 初始化状态
+        var userState = useState(null);
+        var user = userState[0];
+        var setUser = userState[1];
+        
+        var loadingState = useState(true);
+        var loading = loadingState[0];
+        var setLoading = loadingState[1];
+
+        var emailState = useState('');
+        var email = emailState[0];
+        var setEmail = emailState[1];
+        
+        var passwordState = useState('');
+        var password = passwordState[0];
+        var setPassword = passwordState[1];
+        
+        var isLoginState = useState(true);
+        var isLogin = isLoginState[0];
+        var setIsLogin = isLoginState[1];
+        
+        var errorState = useState('');
+        var error = errorState[0];
+        var setError = errorState[1];
+        
+        var showResetState = useState(false);
+        var showReset = showResetState[0];
+        var setShowReset = showResetState[1];
+
+        // 监听认证状态
+        useEffect(function() {
+          var unsubscribe = auth.onAuthStateChanged(function(user) {
+            setUser(user);
+            setLoading(false);
+          });
+          return function() {
+            unsubscribe();
+          };
+        }, []);
+
+        var isManager = user && ADMIN_EMAILS.includes(user.email);
+
+        // 加载状态
+        if (loading) {
+          return React.createElement("div", { 
+            className: "p-8 text-center flex items-center justify-center h-screen"
+          }, 
+            React.createElement("div", { className: "text-center" },
+              React.createElement("div", { 
+                className: "inline-block animate-spin rounded-full h-6 w-6 border-3 border-blue-500 border-t-transparent mb-2" 
+              }),
+              React.createElement("p", { className: "text-gray-600 text-sm" }, "加载中...")
+            )
+          );
+        }
+
+        // 未登录状态
+        if (!user) {
+          return React.createElement(AuthPage, {
+            email: email,
+            setEmail: setEmail,
+            password: password,
+            setPassword: setPassword,
+            isLogin: isLogin,
+            setIsLogin: setIsLogin,
+            error: error,
+            setError: setError,
+            showReset: showReset,
+            setShowReset: setShowReset
+          });
+        }
+
+        // 已登录状态
+        return React.createElement(MainApp, {
+          user: user,
+          isManager: isManager,
+          onLogout: function() {
+            return auth.signOut();
+          },
+          ADMIN_EMAILS: ADMIN_EMAILS
+        });
+      }
+
+      function AuthPage(props) {
+        var email = props.email;
+        var setEmail = props.setEmail;
+        var password = props.password;
+        var setPassword = props.setPassword;
+        var isLogin = props.isLogin;
+        var setIsLogin = props.setIsLogin;
+        var error = props.error;
+        var setError = props.setError;
+        var showReset = props.showReset;
+        var setShowReset = props.setShowReset;
+
+        var handleSubmit = function(e) {
+          e.preventDefault();
+          setError('');
+          var temp;
+          
+          try {
+            if (showReset) {
+              temp = auth.sendPasswordResetEmail(email).then(function() {
+                alert('重置密码链接已发送至邮箱');
+                setShowReset(false);
+              });
+            } else if (isLogin) {
+              temp = auth.signInWithEmailAndPassword(email, password);
+            } else {
+              temp = auth.createUserWithEmailAndPassword(email, password).then(function() {
+                var userId = auth.currentUser.uid;
+                var userRef = db.ref("users/" + userId);
+                userRef.once('value', function(snapshot) {
+                  if (!snapshot.val()) {
+                    userRef.set({
+                      categories: defaultCategories.map(function(name, index) {
+                        return {
+                          id: (index + 1).toString(),
+                          name: name,
+                          isDefault: true
+                        };
+                      }),
+                      createdAt: new Date().toISOString()
+                    });
+                  }
+                });
+              });
+            }
+            return temp;
+          } catch (err) {
+            setError(err.message);
+          }
+        };
+
+        return React.createElement("div", { className: "min-h-screen bg-gray-50 p-4 safe-area-top safe-area-bottom" },
+          React.createElement("div", { className: "max-w-md-mobile mx-auto bg-white rounded-xl shadow-md overflow-hidden" },
+            React.createElement("div", { className: "p-4" },
+              React.createElement("div", { className: "text-center mb-4" },
+                React.createElement("h2", { 
+                  className: "text-lg font-bold text-blue-600 mb-1" 
+                }, 
+                  showReset ? "重置密码" : isLogin ? "欢迎登录" : "创建账户"
+                ),
+                React.createElement("p", { className: "text-gray-600 text-sm" }, 
+                  "青灡居成本与进展管理系统"
+                )
+              ),
+              
+              error && React.createElement("div", { 
+                className: "error-message" 
+              },
+                React.createElement("p", null, error)
+              ),
+              
+              React.createElement("form", { onSubmit: handleSubmit },
+                React.createElement("div", { className: "form-group" },
+                  React.createElement("label", { 
+                    className: "form-label" 
+                  }, "邮箱地址"),
+                  React.createElement("input", {
+                    type: "email",
+                    required: true,
+                    value: email,
+                    onChange: function(e) { setEmail(e.target.value); },
+                    className: "mobile-input w-full input",
+                    placeholder: "your@company.com",
+                    autoFocus: true
+                  })
+                ),
+                !showReset && React.createElement("div", { className: "form-group" },
+                  React.createElement("label", { 
+                    className: "form-label" 
+                  }, "密码"),
+                  React.createElement("input", {
+                    type: "password",
+                    required: true,
+                    value: password,
+                    onChange: function(e) { setPassword(e.target.value); },
+                    className: "mobile-input w-full input",
+                    placeholder: "至少6位字符",
+                    minLength: "6"
+                  })
+                ),
+                
+                React.createElement("button", {
+                  type: "submit",
+                  className: "mobile-button w-full bg-blue-600 text-white rounded-xl font-medium shadow-sm"
+                }, showReset ? "发送重置链接" : isLogin ? "登录" : "注册"),
+                
+                React.createElement("div", { className: "mt-4 text-center" },
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setIsLogin(!isLogin); },
+                    className: "text-blue-600 text-sm font-medium hover:text-blue-800"
+                  }, isLogin ? "没有账户？立即注册" : "已有账户？立即登录"),
+                  
+                  !isLogin && React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setShowReset(!showReset); },
+                    className: "mt-1 text-gray-600 text-sm hover:text-gray-800"
+                  }, showReset ? "返回登录" : "忘记密码？")
+                )
+              )
+            )
+          )
+        );
+      }
+
+      function MainApp(props) {
+        var user = props.user;
+        var isManager = props.isManager;
+        var onLogout = props.onLogout;
+        var ADMIN_EMAILS = props.ADMIN_EMAILS;
+
+        // 初始化状态
+        var projectsState = useState([]);
+        var projects = projectsState[0];
+        var setProjects = projectsState[1];
+        
+        var detailsState = useState([]);
+        var details = detailsState[0];
+        var setDetails = detailsState[1];
+        
+        var categoriesState = useState([]);
+        var categories = categoriesState[0];
+        var setCategories = categoriesState[1];
+        
+        var currentViewState = useState('projects');
+        var currentView = currentViewState[0];
+        var setCurrentView = currentViewState[1];
+        
+        var currentProjectIdState = useState(null);
+        var currentProjectId = currentProjectIdState[0];
+        var setCurrentProjectId = currentProjectIdState[1];
+        
+        var currentDetailIdState = useState(null);
+        var currentDetailId = currentDetailIdState[0];
+        var setCurrentDetailId = currentDetailIdState[1];
+        
+        var filterStatusState = useState('全部');
+        var filterStatus = filterStatusState[0];
+        var setFilterStatus = filterStatusState[1];
+        
+        var detailFilterCategoryState = useState('全部');
+        var detailFilterCategory = detailFilterCategoryState[0];
+        var setDetailFilterCategory = detailFilterCategoryState[1];
+        
+        var showAddProjectState = useState(false);
+        var showAddProject = showAddProjectState[0];
+        var setShowAddProject = showAddProjectState[1];
+        
+        var showEditProjectState = useState(false);
+        var showEditProject = showEditProjectState[0];
+        var setShowEditProject = showEditProjectState[1];
+        
+        var showAddDetailState = useState(false);
+        var showAddDetail = showAddDetailState[0];
+        var setShowAddDetail = showAddDetailState[1];
+        
+        var showEditDetailState = useState(false);
+        var showEditDetail = showEditDetailState[0];
+        var setShowEditDetail = showEditDetailState[1];
+        
+        var editProjectDataState = useState({});
+        var editProjectData = editProjectDataState[0];
+        var setEditProjectData = editProjectDataState[1];
+        
+        var newDetailDataState = useState({
+          id: '',
+          detailName: '',
+          categoryId: '',
+          budgetArea: '',
+          budgetQuantity: '',
+          budgetCost: '',
+          currentQuantity: '',
+          currentCost: ''
+        });
+        var newDetailData = newDetailDataState[0];
+        var setNewDetailData = newDetailDataState[1];
+        
+        var editDetailDataState = useState({});
+        var editDetailData = editDetailDataState[0];
+        var setEditDetailData = editDetailDataState[1];
+        
+        var importModalState = useState(false);
+        var importModal = importModalState[0];
+        var setImportModal = importModalState[1];
+        
+        var progressModalState = useState(false);
+        var progressModal = progressModalState[0];
+        var setProgressModal = progressModalState[1];
+        
+        var budgetModalState = useState(false);
+        var budgetModal = budgetModalState[0];
+        var setBudgetModal = budgetModalState[1];
+        
+        var exportModalState = useState(false);
+        var exportModal = exportModalState[0];
+        var setExportModal = exportModalState[1];
+        
+        var manageUsersState = useState(false);
+        var manageUsers = manageUsersState[0];
+        var setManageUsers = manageUsersState[1];
+        
+        var fileState = useState(null);
+        var file = fileState[0];
+        var setFile = fileState[1];
+        
+        var fileInputRef = useRef(null);
+        var progressFileInputRef = useRef(null);
+        
+        var projectStatuses = [
+          '项目规划中', '项目已启动', '框架建设中', '框架已完成', '项目装修中', '项目已完成'
+        ];
+        
+        var loadingState = useState(false);
+        var loading = loadingState[0];
+        var setLoading = loadingState[1];
+
+        // 加载用户数据
+        useEffect(function() {
+          loadUserData();
+        }, [user]);
+
+        var loadUserData = function() {
+          var userId = user.uid;
+          var userRef = db.ref("users/" + userId);
+          userRef.once('value', function(snapshot) {
+            var userData = snapshot.val() || {
+              categories: defaultCategories.map(function(name, index) {
+                return {
+                  id: (index + 1).toString(),
+                  name: name,
+                  isDefault: true
+                };
+              })
+            };
+            setCategories(userData.categories || []);
+            
+            var projectsRef = isManager ? db.ref('projects') : db.ref('projects').orderByChild('userId').equalTo(userId);
+            projectsRef.on('value', function(snapshot) {
+              var data = snapshot.val() || {};
+              var projectList = [];
+              for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                  projectList.push({ id: key, name: data[key].name, status: data[key].status, 
+                                   budgetValue: data[key].budgetValue, budgetUsed: data[key].budgetUsed,
+                                   progressPercent: data[key].progressPercent, userId: data[key].userId,
+                                   createdAt: data[key].createdAt });
+                }
+              }
+              setProjects(projectList);
+            });
+            
+            db.ref('details').on('value', function(snapshot) {
+              var data = snapshot.val() || {};
+              var detailList = [];
+              for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                  detailList.push({ id: key, projectId: data[key].projectId, detailName: data[key].detailName,
+                                   categoryId: data[key].categoryId, budgetArea: data[key].budgetArea,
+                                   budgetQuantity: data[key].budgetQuantity, budgetCost: data[key].budgetCost,
+                                   currentQuantity: data[key].currentQuantity, currentCost: data[key].currentCost,
+                                   createdAt: data[key].createdAt, progressItems: data[key].progressItems || [],
+                                   budgetItems: data[key].budgetItems || [] });
+                }
+              }
+              setDetails(detailList);
+            });
+          });
+        };
+
+        var saveData = function(path, data) {
+          return db.ref(path).set(data);
+        };
+
+        var addProject = function(project) {
+          var newProject = {
+            name: project.name,
+            status: project.status,
+            budgetValue: parseFloat(project.budgetValue) || 0,
+            budgetUsed: 0,
+            progressPercent: 0,
+            userId: user.uid,
+            createdAt: new Date().toISOString()
+          };
+          var ref = db.ref('projects').push();
+          ref.set(newProject).then(function() {
+            var projectWithId = { id: ref.key, name: newProject.name, status: newProject.status,
+                                 budgetValue: newProject.budgetValue, budgetUsed: newProject.budgetUsed,
+                                 progressPercent: newProject.progressPercent, userId: newProject.userId,
+                                 createdAt: newProject.createdAt };
+            setProjects(function(prev) {
+              var newProjects = [];
+              for (var i = 0; i < prev.length; i++) {
+                newProjects.push(prev[i]);
+              }
+              newProjects.push(projectWithId);
+              return newProjects;
+            });
+          });
+        };
+
+        var updateProject = function(updatedProject) {
+          var id = updatedProject.id || '';
+          var data = {
+            name: updatedProject.name,
+            status: updatedProject.status,
+            budgetValue: updatedProject.budgetValue,
+            budgetUsed: updatedProject.budgetUsed,
+            progressPercent: updatedProject.progressPercent,
+            userId: updatedProject.userId,
+            createdAt: updatedProject.createdAt
+          };
+          
+          db.ref("projects/" + id).set(data).then(function() {
+            setProjects(function(prev) {
+              var newProjects = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id === id) {
+                  newProjects.push({ id: id, name: data.name, status: data.status,
+                                    budgetValue: data.budgetValue, budgetUsed: data.budgetUsed,
+                                    progressPercent: data.progressPercent, userId: data.userId,
+                                    createdAt: data.createdAt });
+                } else {
+                  newProjects.push(prev[i]);
+                }
+              }
+              return newProjects;
+            });
+            
+            var projectDetails = [];
+            for (var i = 0; i < details.length; i++) {
+              if (details[i].projectId === id) {
+                projectDetails.push(details[i]);
+              }
+            }
+            
+            var totalUsed = 0;
+            for (var i = 0; i < projectDetails.length; i++) {
+              totalUsed += parseFloat(projectDetails[i].currentCost) || 0;
+            }
+            
+            var progress = data.budgetValue > 0 ? totalUsed / data.budgetValue * 100 : 0;
+            var finalData = {
+              name: data.name,
+              status: data.status,
+              budgetValue: data.budgetValue,
+              budgetUsed: totalUsed,
+              progressPercent: progress,
+              userId: data.userId,
+              createdAt: data.createdAt
+            };
+            
+            db.ref("projects/" + id).set(finalData).then(function() {
+              setProjects(function(prev) {
+                var newProjects = [];
+                for (var i = 0; i < prev.length; i++) {
+                  if (prev[i].id === id) {
+                    newProjects.push({ id: id, name: finalData.name, status: finalData.status,
+                                      budgetValue: finalData.budgetValue, budgetUsed: finalData.budgetUsed,
+                                      progressPercent: finalData.progressPercent, userId: finalData.userId,
+                                      createdAt: finalData.createdAt });
+                  } else {
+                    newProjects.push(prev[i]);
+                  }
+                }
+                return newProjects;
+              });
+            });
+          });
+        };
+
+        var deleteProject = function(id) {
+          if (!window.confirm('确认要删除项目吗？该操作将同时删除其所有明细记录，且无法恢复。')) return;
+          db.ref("projects/" + id).remove().then(function() {
+            db.ref('details').orderByChild('projectId').equalTo(id).once('value', function(snapshot) {
+              var updates = {};
+              snapshot.forEach(function(child) {
+                updates[child.key] = null;
+              });
+              db.ref('details').update(updates).then(function() {
+                setProjects(function(prev) {
+                  var newProjects = [];
+                  for (var i = 0; i < prev.length; i++) {
+                    if (prev[i].id !== id) {
+                      newProjects.push(prev[i]);
+                    }
+                  }
+                  return newProjects;
+                });
+                setDetails(function(prev) {
+                  var newDetails = [];
+                  for (var i = 0; i < prev.length; i++) {
+                    if (prev[i].projectId !== id) {
+                      newDetails.push(prev[i]);
+                    }
+                  }
+                  return newDetails;
+                });
+              });
+            });
+          });
+        };
+
+        var addDetail = function(detail) {
+          var newDetail = {
+            projectId: currentProjectId,
+            detailName: detail.detailName,
+            categoryId: detail.categoryId,
+            budgetArea: parseFloat(detail.budgetArea) || null,
+            budgetQuantity: parseFloat(detail.budgetQuantity) || 0,
+            budgetCost: parseFloat(detail.budgetCost) || 0,
+            currentQuantity: parseFloat(detail.currentQuantity) || 0,
+            currentCost: parseFloat(detail.currentCost) || 0,
+            createdAt: new Date().toISOString(),
+            progressItems: [],
+            budgetItems: []
+          };
+          var ref = db.ref('details').push();
+          ref.set(newDetail).then(function() {
+            var detailWithId = { id: ref.key, projectId: newDetail.projectId, detailName: newDetail.detailName,
+                                categoryId: newDetail.categoryId, budgetArea: newDetail.budgetArea,
+                                budgetQuantity: newDetail.budgetQuantity, budgetCost: newDetail.budgetCost,
+                                currentQuantity: newDetail.currentQuantity, currentCost: newDetail.currentCost,
+                                createdAt: newDetail.createdAt, progressItems: newDetail.progressItems,
+                                budgetItems: newDetail.budgetItems };
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                newDetails.push(prev[i]);
+              }
+              newDetails.push(detailWithId);
+              return newDetails;
+            });
+            
+            var project = null;
+            for (var i = 0; i < projects.length; i++) {
+              if (projects[i].id === currentProjectId) {
+                project = projects[i];
+                break;
+              }
+            }
+            
+            if (project) {
+              var totalUsed = 0;
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].projectId === currentProjectId) {
+                  totalUsed += details[i].currentCost;
+                }
+              }
+              totalUsed += detailWithId.currentCost;
+              
+              var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
+              var updatedProject = {
+                id: project.id,
+                name: project.name,
+                status: project.status,
+                budgetValue: project.budgetValue,
+                budgetUsed: totalUsed,
+                progressPercent: progress,
+                userId: project.userId,
+                createdAt: project.createdAt
+              };
+              updateProject(updatedProject);
+            }
+          });
+        };
+
+        var updateDetail = function(updatedDetail) {
+          var id = updatedDetail.id || '';
+          var data = {
+            projectId: updatedDetail.projectId,
+            detailName: updatedDetail.detailName,
+            categoryId: updatedDetail.categoryId,
+            budgetArea: updatedDetail.budgetArea,
+            budgetQuantity: updatedDetail.budgetQuantity,
+            budgetCost: updatedDetail.budgetCost,
+            currentQuantity: updatedDetail.currentQuantity,
+            currentCost: updatedDetail.currentCost,
+            createdAt: updatedDetail.createdAt,
+            progressItems: updatedDetail.progressItems || [],
+            budgetItems: updatedDetail.budgetItems || []
+          };
+          
+          db.ref("details/" + id).update(data).then(function() {
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id === id) {
+                  newDetails.push({ id: id, projectId: data.projectId, detailName: data.detailName,
+                                  categoryId: data.categoryId, budgetArea: data.budgetArea,
+                                  budgetQuantity: data.budgetQuantity, budgetCost: data.budgetCost,
+                                  currentQuantity: data.currentQuantity, currentCost: data.currentCost,
+                                  createdAt: data.createdAt, progressItems: data.progressItems,
+                                  budgetItems: data.budgetItems });
+                } else {
+                  newDetails.push(prev[i]);
+                }
+              }
+              return newDetails;
+            });
+            
+            var project = null;
+            for (var i = 0; i < projects.length; i++) {
+              if (projects[i].id === updatedDetail.projectId) {
+                project = projects[i];
+                break;
+              }
+            }
+            
+            if (project) {
+              var totalUsed = 0;
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].projectId === updatedDetail.projectId) {
+                  totalUsed += details[i].currentCost;
+                }
+              }
+              
+              var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
+              var updatedProject = {
+                id: project.id,
+                name: project.name,
+                status: project.status,
+                budgetValue: project.budgetValue,
+                budgetUsed: totalUsed,
+                progressPercent: progress,
+                userId: project.userId,
+                createdAt: project.createdAt
+              };
+              updateProject(updatedProject);
+            }
+          });
+        };
+
+        var deleteDetail = function(id) {
+          if (!window.confirm('确认删除此明细？')) return;
+          var detail = null;
+          for (var i = 0; i < details.length; i++) {
+            if (details[i].id === id) {
+              detail = details[i];
+              break;
+            }
+          }
+          
+          db.ref("details/" + id).remove().then(function() {
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id !== id) {
+                  newDetails.push(prev[i]);
+                }
+              }
+              return newDetails;
+            });
+            
+            var project = null;
+            for (var i = 0; i < projects.length; i++) {
+              if (projects[i].id === detail.projectId) {
+                project = projects[i];
+                break;
+              }
+            }
+            
+            if (project) {
+              var totalUsed = 0;
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].projectId === detail.projectId && details[i].id !== id) {
+                  totalUsed += details[i].currentCost;
+                }
+              }
+              
+              var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
+              var updatedProject = {
+                id: project.id,
+                name: project.name,
+                status: project.status,
+                budgetValue: project.budgetValue,
+                budgetUsed: totalUsed,
+                progressPercent: progress,
+                userId: project.userId,
+                createdAt: project.createdAt
+              };
+              updateProject(updatedProject);
+            }
+          });
+        };
+
+        var addProgressItem = function(detailId, item) {
+          var ref = db.ref("details/" + detailId + "/progressItems").push();
+          var newItem = { id: ref.key, name: item.name, progress: item.progress, createdAt: new Date().toISOString() };
+          ref.set(newItem).then(function() {
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id === detailId) {
+                  var newProgressItems = [];
+                  if (prev[i].progressItems) {
+                    for (var j = 0; j < prev[i].progressItems.length; j++) {
+                      newProgressItems.push(prev[i].progressItems[j]);
+                    }
+                  }
+                  newProgressItems.push(newItem);
+                  newDetails.push({ 
+                    id: prev[i].id,
+                    projectId: prev[i].projectId,
+                    detailName: prev[i].detailName,
+                    categoryId: prev[i].categoryId,
+                    budgetArea: prev[i].budgetArea,
+                    budgetQuantity: prev[i].budgetQuantity,
+                    budgetCost: prev[i].budgetCost,
+                    currentQuantity: prev[i].currentQuantity,
+                    currentCost: prev[i].currentCost,
+                    createdAt: prev[i].createdAt,
+                    progressItems: newProgressItems,
+                    budgetItems: prev[i].budgetItems
+                  });
+                } else {
+                  newDetails.push(prev[i]);
+                }
+              }
+              return newDetails;
+            });
+            recalculateDetailProgress(detailId);
+          });
+        };
+
+        var updateProgressItem = function(detailId, itemId, updates) {
+          db.ref("details/" + detailId + "/progressItems/" + itemId).update(updates).then(function() {
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id === detailId) {
+                  var newProgressItems = [];
+                  for (var j = 0; j < prev[i].progressItems.length; j++) {
+                    if (prev[i].progressItems[j].id === itemId) {
+                      newProgressItems.push({
+                        id: prev[i].progressItems[j].id,
+                        name: updates.name || prev[i].progressItems[j].name,
+                        progress: updates.progress || prev[i].progressItems[j].progress,
+                        createdAt: prev[i].progressItems[j].createdAt
+                      });
+                    } else {
+                      newProgressItems.push(prev[i].progressItems[j]);
+                    }
+                  }
+                  newDetails.push({ 
+                    id: prev[i].id,
+                    projectId: prev[i].projectId,
+                    detailName: prev[i].detailName,
+                    categoryId: prev[i].categoryId,
+                    budgetArea: prev[i].budgetArea,
+                    budgetQuantity: prev[i].budgetQuantity,
+                    budgetCost: prev[i].budgetCost,
+                    currentQuantity: prev[i].currentQuantity,
+                    currentCost: prev[i].currentCost,
+                    createdAt: prev[i].createdAt,
+                    progressItems: newProgressItems,
+                    budgetItems: prev[i].budgetItems
+                  });
+                } else {
+                  newDetails.push(prev[i]);
+                }
+              }
+              return newDetails;
+            });
+            recalculateDetailProgress(detailId);
+          });
+        };
+
+        var deleteProgressItem = function(detailId, itemId) {
+          db.ref("details/" + detailId + "/progressItems/" + itemId).remove().then(function() {
+            setDetails(function(prev) {
+              var newDetails = [];
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i].id === detailId) {
+                  var newProgressItems = [];
+                  for (var j = 0; j < prev[i].progressItems.length; j++) {
+                    if (prev[i].progressItems[j].id !== itemId) {
+                      newProgressItems.push(prev[i].progressItems[j]);
+                    }
+                  }
+                  newDetails.push({ 
+                    id: prev[i].id,
+                    projectId: prev[i].projectId,
+                    detailName: prev[i].detailName,
+                    categoryId: prev[i].categoryId,
+                    budgetArea: prev[i].budgetArea,
+                    budgetQuantity: prev[i].budgetQuantity,
+                    budgetCost: prev[i].budgetCost,
+                    currentQuantity: prev[i].currentQuantity,
+                    currentCost: prev[i].currentCost,
+                    createdAt: prev[i].createdAt,
+                    progressItems: newProgressItems,
+                    budgetItems: prev[i].budgetItems
+                  });
+                } else {
+                  newDetails.push(prev[i]);
+                }
+              }
+              return newDetails;
+            });
+            recalculateDetailProgress(detailId);
+          });
+        };
+
+        var recalculateDetailProgress = function(detailId) {
+          var detail = null;
+          for (var i = 0; i < details.length; i++) {
+            if (details[i].id === detailId) {
+              detail = details[i];
+              break;
+            }
+          }
+          
+          if (!detail || !detail.progressItems || detail.progressItems.length === 0) {
+            return;
+          }
+          
+          var avgProgress = 0;
+          for (var i = 0; i < detail.progressItems.length; i++) {
+            avgProgress += parseFloat(detail.progressItems[i].progress) || 0;
+          }
+          avgProgress /= detail.progressItems.length;
+          
+          var updatedDetail = {
+            id: detail.id,
+            projectId: detail.projectId,
+            detailName: detail.detailName,
+            categoryId: detail.categoryId,
+            budgetArea: detail.budgetArea,
+            budgetQuantity: detail.budgetQuantity,
+            budgetCost: detail.budgetCost,
+            currentQuantity: detail.currentQuantity,
+            currentCost: detail.currentCost,
+            createdAt: detail.createdAt,
+            progressItems: detail.progressItems,
+            budgetItems: detail.budgetItems,
+            progressPercent: avgProgress
+          };
+          updateDetail(updatedDetail);
+        };
+        
+        // 导出明细数据
+        var exportDetails = function() {
+          setLoading(true);
+          
+          setTimeout(function() {
+            try {
+              // 获取当前项目的明细数据
+              var projectDetails = [];
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].projectId === currentProjectId) {
+                  projectDetails.push(details[i]);
+                }
+              }
+              
+              // 转换数据为Excel格式
+              var wsData = [
+                ["详细名称", "分项名称", "预算面积(㎡)", "预算用量", "预算费用(元)", "当前使用量", "当前使用费用(元)"]
+              ];
+              
+              projectDetails.forEach(function(detail) {
+                var categoryName = "未知";
+                for (var i = 0; i < categories.length; i++) {
+                  if (categories[i].id === detail.categoryId) {
+                    categoryName = categories[i].name;
+                    break;
+                  }
+                }
+                
+                wsData.push([
+                  detail.detailName,
+                  categoryName,
+                  detail.budgetArea ? detail.budgetArea.toFixed(2) : '',
+                  detail.budgetQuantity ? detail.budgetQuantity.toFixed(2) : '',
+                  detail.budgetCost ? detail.budgetCost.toFixed(2) : '',
+                  detail.currentQuantity ? detail.currentQuantity.toFixed(2) : '',
+                  detail.currentCost ? detail.currentCost.toFixed(2) : ''
+                ]);
+              });
+              
+              var ws = XLSX.utils.aoa_to_sheet(wsData);
+              var wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "明细数据");
+              
+              // 生成Excel文件并下载
+              var projectName = currentProject ? currentProject.name : "项目";
+              var fileName = "青灡居_" + projectName + "_明细数据_" + new Date().toISOString().slice(0, 10) + ".xlsx";
+              
+              // 使用setTimeout确保UI更新
+              setTimeout(function() {
+                XLSX.writeFile(wb, fileName);
+                setLoading(false);
+                alert("导出成功！文件已下载。");
+              }, 100);
+            } catch (err) {
+              setLoading(false);
+              alert("导出失败: " + err.message);
+            }
+          }, 100);
+        };
+        
+        // 下载模板功能
+        var downloadTemplate = function() {
+          var wsData = [
+            ["详细名称", "分项名称", "预算面积(㎡)", "预算用量", "预算费用(元)", "当前使用量", "当前使用费用(元)"],
+            ["北侧院墙砌筑", "院墙", "50", "100", "8000", "0", "0"],
+            ["南侧院墙砌筑", "院墙", "50", "100", "8000", "0", "0"],
+            ["东侧院墙砌筑", "院墙", "50", "100", "8000", "0", "0"],
+            ["西侧院墙砌筑", "院墙", "50", "100", "8000", "0", "0"]
+          ];
+          
+          var ws = XLSX.utils.aoa_to_sheet(wsData);
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "导入模板");
+          
+          XLSX.writeFile(wb, "青灡居_明细导入模板.xlsx");
+        };
+        
+        // 导出预算数据
+        var exportBudgets = function() {
+          setLoading(true);
+          
+          setTimeout(function() {
+            try {
+              // 获取当前明细的预算数据
+              var detail = null;
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].id === currentDetailId) {
+                  detail = details[i];
+                  break;
+                }
+              }
+              
+              if (!detail) {
+                setLoading(false);
+                alert("预算数据不存在");
+                return;
+              }
+              
+              // 转换数据为Excel格式
+              var wsData = [
+                ["条目名称", "金额(元)", "说明"]
+              ];
+              
+              (detail.budgetItems || []).forEach(function(item) {
+                wsData.push([
+                  item.name,
+                  item.amount ? item.amount.toFixed(2) : '',
+                  item.description || ''
+                ]);
+              });
+              
+              var ws = XLSX.utils.aoa_to_sheet(wsData);
+              var wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "预算数据");
+              
+              // 生成Excel文件并下载
+              var projectName = currentProject ? currentProject.name : "项目";
+              var detailName = detail ? detail.detailName : "明细";
+              var fileName = "青灡居_" + projectName + "_" + detailName + "_预算数据_" + new Date().toISOString().slice(0, 10) + ".xlsx";
+              
+              // 使用setTimeout确保UI更新
+              setTimeout(function() {
+                XLSX.writeFile(wb, fileName);
+                setLoading(false);
+                alert("预算数据导出成功！文件已下载。");
+              }, 100);
+            } catch (err) {
+              setLoading(false);
+              alert("预算数据导出失败: " + err.message);
+            }
+          }, 100);
+        };
+        
+        // 下载预算模板
+        var downloadBudgetTemplate = function() {
+          var wsData = [
+            ["条目名称", "金额(元)", "说明"],
+            ["材料费", "5000", "水泥、砂石等"],
+            ["人工费", "3000", "砌筑人工"],
+            ["运输费", "500", "材料运输"]
+          ];
+          
+          var ws = XLSX.utils.aoa_to_sheet(wsData);
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "预算模板");
+          
+          XLSX.writeFile(wb, "青灡居_预算导入模板.xlsx");
+        };
+        
+        // 导入预算数据
+        var importBudgetData = function(file) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              var data = new Uint8Array(e.target.result);
+              var workbook = XLSX.read(data, { type: 'array' });
+              var sheet = workbook.Sheets[workbook.SheetNames[0]];
+              var json = XLSX.utils.sheet_to_json(sheet);
+              
+              var newBudgetItems = [];
+              for (var i = 0; i < json.length; i++) {
+                var row = json[i];
+                newBudgetItems.push({
+                  id: Date.now().toString() + i,
+                  name: row.条目名称 || '',
+                  amount: parseFloat(row.金额) || 0,
+                  description: row.说明 || '',
+                  createdAt: new Date().toISOString()
+                });
+              }
+              
+              // 保存到Firebase
+              var updates = {};
+              for (var i = 0; i < newBudgetItems.length; i++) {
+                var ref = db.ref('details/' + currentDetailId + '/budgetItems').push();
+                updates[ref.key] = newBudgetItems[i];
+              }
+              
+              db.ref('details/' + currentDetailId + '/budgetItems').update(updates).then(function() {
+                setDetails(function(prev) {
+                  var newDetails = [];
+                  for (var i = 0; i < prev.length; i++) {
+                    if (prev[i].id === currentDetailId) {
+                      var newBudgetItems = [];
+                      if (prev[i].budgetItems) {
+                        for (var j = 0; j < prev[i].budgetItems.length; j++) {
+                          newBudgetItems.push(prev[i].budgetItems[j]);
+                        }
+                      }
+                      for (var key in updates) {
+                        if (updates.hasOwnProperty(key)) {
+                          newBudgetItems.push(updates[key]);
+                        }
+                      }
+                      newDetails.push({ 
+                        id: prev[i].id,
+                        projectId: prev[i].projectId,
+                        detailName: prev[i].detailName,
+                        categoryId: prev[i].categoryId,
+                        budgetArea: prev[i].budgetArea,
+                        budgetQuantity: prev[i].budgetQuantity,
+                        budgetCost: prev[i].budgetCost,
+                        currentQuantity: prev[i].currentQuantity,
+                        currentCost: prev[i].currentCost,
+                        createdAt: prev[i].createdAt,
+                        progressItems: prev[i].progressItems,
+                        budgetItems: newBudgetItems
+                      });
+                    } else {
+                      newDetails.push(prev[i]);
+                    }
+                  }
+                  return newDetails;
+                });
+                
+                // 更新明细的总费用
+                var totalCost = 0;
+                for (var i = 0; i < newBudgetItems.length; i++) {
+                  totalCost += parseFloat(newBudgetItems[i].amount) || 0;
+                }
+                
+                var updatedDetail = {
+                  id: currentDetailId,
+                  projectId: currentProjectId,
+                  detailName: detail.detailName,
+                  categoryId: detail.categoryId,
+                  budgetArea: detail.budgetArea,
+                  budgetQuantity: detail.budgetQuantity,
+                  budgetCost: detail.budgetCost,
+                  currentQuantity: detail.currentQuantity,
+                  currentCost: totalCost,
+                  createdAt: detail.createdAt,
+                  progressItems: detail.progressItems,
+                  budgetItems: newBudgetItems
+                };
+                updateDetail(updatedDetail);
+                
+                alert('预算数据导入成功！');
+              });
+            } catch (err) {
+              alert("导入预算数据失败: " + err.message);
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        };
+        
+        // 导出进度数据
+        var exportProgresses = function() {
+          setLoading(true);
+          
+          setTimeout(function() {
+            try {
+              // 获取当前明细的进度数据
+              var detail = null;
+              for (var i = 0; i < details.length; i++) {
+                if (details[i].id === currentDetailId) {
+                  detail = details[i];
+                  break;
+                }
+              }
+              
+              if (!detail) {
+                setLoading(false);
+                alert("进度数据不存在");
+                return;
+              }
+              
+              // 转换数据为Excel格式
+              var wsData = [
+                ["条目名称", "进度(%)"]
+              ];
+              
+              (detail.progressItems || []).forEach(function(item) {
+                wsData.push([
+                  item.name,
+                  item.progress || 0
+                ]);
+              });
+              
+              var ws = XLSX.utils.aoa_to_sheet(wsData);
+              var wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "进度数据");
+              
+              // 生成Excel文件并下载
+              var projectName = currentProject ? currentProject.name : "项目";
+              var detailName = detail ? detail.detailName : "明细";
+              var fileName = "青灡居_" + projectName + "_" + detailName + "_进度数据_" + new Date().toISOString().slice(0, 10) + ".xlsx";
+              
+              // 使用setTimeout确保UI更新
+              setTimeout(function() {
+                XLSX.writeFile(wb, fileName);
+                setLoading(false);
+                alert("进度数据导出成功！文件已下载。");
+              }, 100);
+            } catch (err) {
+              setLoading(false);
+              alert("进度数据导出失败: " + err.message);
+            }
+          }, 100);
+        };
+        
+        // 下载进度模板
+        var downloadProgressTemplate = function() {
+          var wsData = [
+            ["条目名称", "进度(%)"],
+            ["基础施工", "20"],
+            ["主体结构", "40"],
+            ["墙体砌筑", "60"],
+            ["内部装修", "80"]
+          ];
+          
+          var ws = XLSX.utils.aoa_to_sheet(wsData);
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "进度模板");
+          
+          XLSX.writeFile(wb, "青灡居_进度导入模板.xlsx");
+        };
+        
+        // 导入进度数据
+        var importProgressData = function(file) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              var data = new Uint8Array(e.target.result);
+              var workbook = XLSX.read(data, { type: 'array' });
+              var sheet = workbook.Sheets[workbook.SheetNames[0]];
+              var json = XLSX.utils.sheet_to_json(sheet);
+              
+              var newProgressItems = [];
+              for (var i = 0; i < json.length; i++) {
+                var row = json[i];
+                newProgressItems.push({
+                  id: Date.now().toString() + i,
+                  name: row.条目名称 || '',
+                  progress: parseFloat(row.进度) || 0,
+                  createdAt: new Date().toISOString()
+                });
+              }
+              
+              // 保存到Firebase
+              var updates = {};
+              for (var i = 0; i < newProgressItems.length; i++) {
+                var ref = db.ref('details/' + currentDetailId + '/progressItems').push();
+                updates[ref.key] = newProgressItems[i];
+              }
+              
+              db.ref('details/' + currentDetailId + '/progressItems').update(updates).then(function() {
+                setDetails(function(prev) {
+                  var newDetails = [];
+                  for (var i = 0; i < prev.length; i++) {
+                    if (prev[i].id === currentDetailId) {
+                      var newProgressItems = [];
+                      if (prev[i].progressItems) {
+                        for (var j = 0; j < prev[i].progressItems.length; j++) {
+                          newProgressItems.push(prev[i].progressItems[j]);
+                        }
+                      }
+                      for (var key in updates) {
+                        if (updates.hasOwnProperty(key)) {
+                          newProgressItems.push(updates[key]);
+                        }
+                      }
+                      newDetails.push({ 
+                        id: prev[i].id,
+                        projectId: prev[i].projectId,
+                        detailName: prev[i].detailName,
+                        categoryId: prev[i].categoryId,
+                        budgetArea: prev[i].budgetArea,
+                        budgetQuantity: prev[i].budgetQuantity,
+                        budgetCost: prev[i].budgetCost,
+                        currentQuantity: prev[i].currentQuantity,
+                        currentCost: prev[i].currentCost,
+                        createdAt: prev[i].createdAt,
+                        progressItems: newProgressItems,
+                        budgetItems: prev[i].budgetItems
+                      });
+                    } else {
+                      newDetails.push(prev[i]);
+                    }
+                  }
+                  return newDetails;
+                });
+                
+                // 重新计算进度
+                recalculateDetailProgress(currentDetailId);
+                alert('进度数据导入成功！');
+              });
+            } catch (err) {
+              alert("导入进度数据失败: " + err.message);
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        };
+
+        // 过滤项目
+        var filteredProjects = [];
+        if (filterStatus === '全部') {
+          filteredProjects = projects;
+        } else {
+          for (var i = 0; i < projects.length; i++) {
+            if (projects[i].status === filterStatus) {
+              filteredProjects.push(projects[i]);
+            }
+          }
+        }
+        
+        // 当前项目
+        var currentProject = null;
+        for (var i = 0; i < projects.length; i++) {
+          if (projects[i].id === currentProjectId) {
+            currentProject = projects[i];
+            break;
+          }
+        }
+        
+        // 项目明细
+        var projectDetails = [];
+        for (var i = 0; i < details.length; i++) {
+          if (details[i].projectId === currentProjectId) {
+            projectDetails.push(details[i]);
+          }
+        }
+        
+        // 过滤明细
+        var filteredDetails = [];
+        if (detailFilterCategory === '全部') {
+          filteredDetails = projectDetails;
+        } else {
+          for (var i = 0; i < projectDetails.length; i++) {
+            var cat = null;
+            for (var j = 0; j < categories.length; j++) {
+              if (categories[j].id === projectDetails[i].categoryId) {
+                cat = categories[j];
+                break;
+              }
+            }
+            if (cat && cat.name === detailFilterCategory) {
+              filteredDetails.push(projectDetails[i]);
+            }
+          }
+        }
+        
+        // 分项统计
+        var categoryStats = {};
+        for (var i = 0; i < filteredDetails.length; i++) {
+          var cat = null;
+          for (var j = 0; j < categories.length; j++) {
+            if (categories[j].id === filteredDetails[i].categoryId) {
+              cat = categories[j];
+              break;
+            }
+          }
+          var name = cat ? cat.name : '未知';
+          
+          if (!categoryStats[name]) {
+            categoryStats[name] = { 
+              budgetCost: 0, 
+              currentCost: 0,
+              budgetQuantity: 0,
+              currentQuantity: 0
+            };
+          }
+          
+          categoryStats[name].budgetCost += filteredDetails[i].budgetCost;
+          categoryStats[name].currentCost += filteredDetails[i].currentCost;
+          categoryStats[name].budgetQuantity += filteredDetails[i].budgetQuantity;
+          categoryStats[name].currentQuantity += filteredDetails[i].currentQuantity;
+        }
+
+        function ProgressModal(props) {
+          var detailId = props.detailId;
+          var onClose = props.onClose;
+          
+          var newItemState = useState({ name: '', progress: '' });
+          var newItem = newItemState[0];
+          var setNewItem = newItemState[1];
+          
+          var detail = null;
+          for (var i = 0; i < details.length; i++) {
+            if (details[i].id === detailId) {
+              detail = details[i];
+              break;
+            }
+          }
+          var progressItems = detail ? detail.progressItems || [] : [];
+
+          var handleAdd = function() {
+            if (newItem.name && newItem.progress) {
+              addProgressItem(detailId, newItem);
+              setNewItem({ name: '', progress: '' });
+            }
+          };
+          
+          var handleUpdate = function(itemId, field, value) {
+            var updates = {};
+            updates[field] = value;
+            updateProgressItem(detailId, itemId, updates);
+          };
+          
+          var handleDelete = function(itemId) {
+            deleteProgressItem(detailId, itemId);
+          };
+          
+          var handleImport = function() {
+            if (progressFileInputRef.current) {
+              progressFileInputRef.current.click();
+            }
+          };
+          
+          var handleFileChange = function(e) {
+            var file = e.target.files[0];
+            if (file) {
+              importProgressData(file);
+              e.target.value = null; // 重置文件输入
+            }
+          };
+
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50" },
+            React.createElement("div", { className: "mobile-modal bg-white w-full rounded-t-xl overflow-hidden" },
+              React.createElement("div", { className: "modal-header" },
+                React.createElement("h3", { className: "text-lg font-semibold" }, "工程进度管理"),
+                React.createElement("button", {
+                  onClick: onClose,
+                  className: "text-gray-500 hover:text-gray-700"
+                }, "关闭")
+              ),
+              React.createElement("div", { className: "modal-content" },
+                // 进度操作区域
+                React.createElement("div", { className: "budget-progress-actions" },
+                  React.createElement("button", {
+                    onClick: exportProgresses,
+                    className: "mobile-button bg-blue-600 text-white"
+                  }, "导出"),
+                  React.createElement("button", {
+                    onClick: downloadProgressTemplate,
+                    className: "mobile-button bg-gray-200 text-gray-700"
+                  }, "下载模板"),
+                  React.createElement("label", {
+                    className: "mobile-button bg-green-600 text-white"
+                  },
+                    "导入",
+                    React.createElement("input", {
+                      type: "file",
+                      accept: ".xlsx,.xls,.csv",
+                      onChange: handleFileChange,
+                      ref: progressFileInputRef,
+                      className: "hidden"
+                    })
+                  )
+                ),
+                
+                React.createElement("div", { className: "form-group" },
+                  React.createElement("div", { className: "flex flex-col gap-2" },
+                    React.createElement("input", {
+                      type: "text",
+                      value: newItem.name,
+                      onChange: function(e) {
+                        setNewItem({ name: e.target.value, progress: newItem.progress });
+                      },
+                      placeholder: "条目名称（如墙角）",
+                      className: "mobile-input border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }),
+                    React.createElement("input", {
+                      type: "number",
+                      value: newItem.progress,
+                      onChange: function(e) {
+                        setNewItem({ name: newItem.name, progress: e.target.value });
+                      },
+                      placeholder: "进度（%）",
+                      className: "mobile-input border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }),
+                    React.createElement("button", {
+                      onClick: handleAdd,
+                      className: "mobile-button bg-blue-600 text-white rounded-lg font-medium"
+                    }, "添加进度条目")
+                  )
+                ),
+                React.createElement("div", { className: "space-y-2" },
+                  progressItems.map(function(item) {
+                    return React.createElement("div", { key: item.id, className: "flex items-center gap-2 p-2 bg-gray-50 rounded-lg" },
+                      React.createElement("div", { className: "flex-1" },
+                        React.createElement("input", {
+                          type: "text",
+                          value: item.name,
+                          onChange: function(e) {
+                            handleUpdate(item.id, 'name', e.target.value);
+                          },
+                          className: "w-full bg-transparent border-none focus:outline-none"
+                        }),
+                        React.createElement("div", { className: "flex items-center mt-1" },
+                          React.createElement("div", { className: "w-full bg-gray-200 rounded-full h-2" },
+                            React.createElement("div", {
+                              className: "bg-blue-600 h-2 rounded-full",
+                              style: { width: (item.progress || 0) + "%" }
+                            })
+                          ),
+                          React.createElement("span", { className: "ml-2 text-xs text-gray-600" },
+                            item.progress, "%"
+                          )
+                        )
+                      ),
+                      React.createElement("button", {
+                        onClick: function() { handleDelete(item.id); },
+                        className: "text-red-600 text-xs"
+                      }, "删除")
+                    );
+                  })
+                ),
+                React.createElement("div", { className: "mt-3 p-2 bg-blue-50 rounded-lg" },
+                  React.createElement("p", { className: "text-xs text-blue-700" },
+                    "提示：工程进度 = 所有条目进度的平均值"
+                  )
+                )
+              )
+            )
+          );
+        }
+
+        function BudgetModal(props) {
+          var detailId = props.detailId;
+          var onClose = props.onClose;
+          
+          var newItemState = useState({ name: '', amount: '', description: '' });
+          var newItem = newItemState[0];
+          var setNewItem = newItemState[1];
+          
+          var detail = null;
+          for (var i = 0; i < details.length; i++) {
+            if (details[i].id === detailId) {
+              detail = details[i];
+              break;
+            }
+          }
+          var budgetItems = detail ? detail.budgetItems || [] : [];
+
+          var handleAdd = function() {
+            if (newItem.name && newItem.amount) {
+              addBudgetItem(detailId, newItem);
+              setNewItem({ name: '', amount: '', description: '' });
+            }
+          };
+          
+          var handleDelete = function(itemId) {
+            deleteBudgetItem(detailId, itemId);
+          };
+          
+          var handleImport = function() {
+            if (progressFileInputRef.current) {
+              progressFileInputRef.current.click();
+            }
+          };
+          
+          var handleFileChange = function(e) {
+            var file = e.target.files[0];
+            if (file) {
+              importBudgetData(file);
+              e.target.value = null; // 重置文件输入
+            }
+          };
+
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50" },
+            React.createElement("div", { className: "mobile-modal bg-white w-full rounded-t-xl overflow-hidden" },
+              React.createElement("div", { className: "modal-header" },
+                React.createElement("h3", { className: "text-lg font-semibold" }, "预算使用申请"),
+                React.createElement("button", {
+                  onClick: onClose,
+                  className: "text-gray-500 hover:text-gray-700"
+                }, "关闭")
+              ),
+              React.createElement("div", { className: "modal-content" },
+                // 预算操作区域
+                React.createElement("div", { className: "budget-progress-actions" },
+                  React.createElement("button", {
+                    onClick: exportBudgets,
+                    className: "mobile-button bg-blue-600 text-white"
+                  }, "导出"),
+                  React.createElement("button", {
+                    onClick: downloadBudgetTemplate,
+                    className: "mobile-button bg-gray-200 text-gray-700"
+                  }, "下载模板"),
+                  React.createElement("label", {
+                    className: "mobile-button bg-green-600 text-white"
+                  },
+                    "导入",
+                    React.createElement("input", {
+                      type: "file",
+                      accept: ".xlsx,.xls,.csv",
+                      onChange: handleFileChange,
+                      ref: progressFileInputRef,
+                      className: "hidden"
+                    })
+                  )
+                ),
+                
+                React.createElement("div", { className: "form-group" },
+                  React.createElement("div", { className: "flex flex-col gap-2" },
+                    React.createElement("input", {
+                      type: "text",
+                      value: newItem.name,
+                      onChange: function(e) {
+                        setNewItem({ name: e.target.value, amount: newItem.amount, description: newItem.description });
+                      },
+                      placeholder: "条目名称（如材料费）",
+                      className: "mobile-input border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }),
+                    React.createElement("input", {
+                      type: "number",
+                      value: newItem.amount,
+                      onChange: function(e) {
+                        setNewItem({ name: newItem.name, amount: e.target.value, description: newItem.description });
+                      },
+                      placeholder: "金额（元）",
+                      className: "mobile-input border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }),
+                    React.createElement("input", {
+                      type: "text",
+                      value: newItem.description,
+                      onChange: function(e) {
+                        setNewItem({ name: newItem.name, amount: newItem.amount, description: e.target.value });
+                      },
+                      placeholder: "说明",
+                      className: "mobile-input border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    }),
+                    React.createElement("button", {
+                      onClick: handleAdd,
+                      className: "mobile-button bg-blue-600 text-white rounded-lg font-medium"
+                    }, "添加预算条目")
+                  )
+                ),
+                React.createElement("div", { className: "space-y-2" },
+                  budgetItems.map(function(item) {
+                    return React.createElement("div", { key: item.id, className: "flex flex-col p-2 bg-gray-50 rounded-lg" },
+                      React.createElement("div", { className: "flex justify-between items-start" },
+                        React.createElement("div", null,
+                          React.createElement("p", { className: "font-medium text-sm" }, item.name),
+                          item.description && React.createElement("p", { className: "text-gray-600 mt-1 text-xs" }, item.description)
+                        ),
+                        React.createElement("div", { className: "text-right" },
+                          React.createElement("p", { className: "text-blue-600 font-semibold text-sm" }, "¥", parseFloat(item.amount).toFixed(2)),
+                          React.createElement("button", {
+                            onClick: function() { handleDelete(item.id); },
+                            className: "mt-1 text-red-600 text-xs"
+                          }, "删除")
+                        )
+                      )
+                    );
+                  })
+                ),
+                React.createElement("div", { className: "mt-3 p-2 bg-blue-50 rounded-lg" },
+                  React.createElement("p", { className: "text-xs text-blue-700" },
+                    "提示：预算使用 = 所有条目金额总和"
+                  )
+                )
+              )
+            )
+          );
+        }
+
+        function UserManagement(props) {
+          var onClose = props.onClose;
+          var user = props.user;
+          var ADMIN_EMAILS = props.ADMIN_EMAILS;
+          
+          var usersState = useState([]);
+          var users = usersState[0];
+          var setUsers = usersState[1];
+          
+          var loadingState = useState(true);
+          var loading = loadingState[0];
+          var setLoading = loadingState[1];
+
+          useEffect(function() {
+            db.ref('users').once('value', function(snapshot) {
+              var data = snapshot.val() || {};
+              var userList = [];
+              for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                  userList.push({
+                    uid: key,
+                    email: key,
+                    createdAt: data[key].createdAt
+                  });
+                }
+              }
+              setUsers(userList);
+              setLoading(false);
+            });
+          }, []);
+
+          var deleteUser = function(uid, email) {
+            if (!window.confirm("确认删除用户 " + email + "？")) return;
+            alert('请在 Firebase 控制台手动删除用户');
+          };
+
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50" },
+            React.createElement("div", { className: "mobile-modal bg-white w-full rounded-t-xl overflow-hidden" },
+              React.createElement("div", { className: "modal-header" },
+                React.createElement("h3", { className: "text-lg font-semibold" }, "用户管理"),
+                React.createElement("button", {
+                  onClick: onClose,
+                  className: "text-gray-500 hover:text-gray-700"
+                }, "关闭")
+              ),
+              React.createElement("div", { className: "modal-content" },
+                loading ? 
+                  React.createElement("div", { className: "flex justify-center py-4" },
+                    React.createElement("div", { 
+                      className: "inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent" 
+                    })
+                  ) :
+                  users.length === 0 ?
+                    React.createElement("p", { className: "text-center py-3 text-gray-500 text-sm" }, "暂无用户") :
+                    React.createElement("div", { className: "space-y-2" },
+                      users.map(function(u) {
+                        return React.createElement("div", { key: u.uid, className: "p-2 bg-gray-50 rounded-lg" },
+                          React.createElement("div", { className: "flex justify-between items-start" },
+                            React.createElement("div", null,
+                              React.createElement("p", { className: "font-medium text-sm" }, u.email),
+                              React.createElement("p", { className: "text-xs text-gray-500 mt-1" }, 
+                                "创建于 ", new Date(u.createdAt).toLocaleDateString()
+                              )
+                            ),
+                            ADMIN_EMAILS.includes(user.email) && user.email !== u.email &&
+                              React.createElement("button", {
+                                onClick: function() { deleteUser(u.uid, u.email); },
+                                className: "text-red-600 text-xs mt-1"
+                              }, "删除")
+                          )
+                        );
+                      })
+                    )
+              ),
+              React.createElement("div", { className: "modal-footer" },
+                React.createElement("p", { className: "text-xs text-gray-500" },
+                  "提示：删除用户需在 Firebase 控制台操作"
+                )
+              )
+            )
+          );
+        }
+
+        return React.createElement("div", { className: "min-h-screen bg-gray-50" },
+          // 顶部导航栏
+          React.createElement("header", { className: "mobile-header" },
+            React.createElement("div", { className: "flex items-center justify-between" },
+              React.createElement("h1", { className: "text-lg font-bold text-blue-600" }, "青灡居"),
+              React.createElement("div", { className: "flex items-center gap-2" },
+                React.createElement("span", { className: "text-xs text-gray-600" },
+                  isManager ? "管理员" : "用户", ": ", user.email
+                ),
+                React.createElement("button", {
+                  onClick: function() { setManageUsers(true); },
+                  className: "text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded"
+                }, "用户管理"),
+                React.createElement("button", {
+                  onClick: onLogout,
+                  className: "text-red-600 text-xs"
+                }, "退出")
+              )
+            )
+          ),
+          
+          // 项目视图
+          currentView === 'projects' && React.createElement("div", { className: "p-4" },
+            React.createElement("div", { className: "mb-3" },
+              React.createElement("select", {
+                value: filterStatus,
+                onChange: function(e) { setFilterStatus(e.target.value); },
+                className: "mobile-input w-full border border-gray-300 rounded-lg"
+              },
+                React.createElement("option", { value: "全部" }, "全部状态"),
+                projectStatuses.map(function(s) {
+                  return React.createElement("option", { key: s, value: s }, s);
+                })
+              )
+            ),
+            
+            filteredProjects.length === 0 ?
+              React.createElement("div", { className: "text-center py-8" },
+                React.createElement("div", { className: "text-gray-400 mb-2" },
+                  React.createElement("svg", { 
+                    className: "w-10 h-10 mx-auto", 
+                    fill: "none", 
+                    stroke: "currentColor", 
+                    viewBox: "0 0 24 24"
+                  },
+                    React.createElement("path", { 
+                      strokeLinecap: "round", 
+                      strokeLinejoin: "round", 
+                      strokeWidth: "2", 
+                      d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
+                    })
+                  )
+                ),
+                React.createElement("p", { className: "text-gray-500 text-sm" }, "暂无项目")
+              ) :
+              filteredProjects.map(function(p) {
+                // 为不同状态设置不同的样式类
+                var statusClass = '';
+                switch (p.status) {
+                  case '项目规划中': statusClass = 'status-planning'; break;
+                  case '项目已启动': statusClass = 'status-started'; break;
+                  case '框架建设中': statusClass = 'status-framing'; break;
+                  case '框架已完成': statusClass = 'status-framed'; break;
+                  case '项目装修中': statusClass = 'status-renovation'; break;
+                  case '项目已完成': statusClass = 'status-completed'; break;
+                  default: statusClass = 'bg-gray-100 text-gray-700';
+                }
+                
+                return React.createElement("div", { key: p.id, className: "project-card mobile-card bg-white mb-2" },
+                  React.createElement("div", { className: "p-3" },
+                    React.createElement("h2", { className: "font-semibold text-base" }, p.name),
+                    React.createElement("div", { className: "mt-1" },
+                      React.createElement("span", { className: "status-badge " + statusClass }, p.status)
+                    ),
+                    
+                    React.createElement("div", { className: "mt-2" },
+                      React.createElement("p", { className: "text-sm text-gray-700" },
+                        "预算：¥", p.budgetValue.toLocaleString(), " / ¥", p.budgetUsed.toLocaleString()
+                      ),
+                      React.createElement("div", { className: "progress-bar mt-1" },
+                        React.createElement("div", {
+                          className: "progress-fill",
+                          style: { width: Math.min(p.progressPercent, 100) + "%" }
+                        })
+                      ),
+                      React.createElement("p", { className: "text-xs text-gray-500 mt-1" },
+                        p.progressPercent.toFixed(1), "% 进展"
+                      )
+                    ),
+                    
+                    React.createElement("div", { className: "button-group mt-3" },
+                      React.createElement("button", {
+                        onClick: function() {
+                          setCurrentProjectId(p.id);
+                          setCurrentView('details');
+                        },
+                        className: "mobile-button btn-success"
+                      }, "明细"),
+                      React.createElement("button", {
+                        onClick: function() {
+                          setEditProjectData(p);
+                          setShowEditProject(true);
+                        },
+                        className: "mobile-button btn-warning"
+                      }, "编辑"),
+                      React.createElement("button", {
+                        onClick: function() { deleteProject(p.id); },
+                        className: "mobile-button btn-danger"
+                      }, "删除")
+                    )
+                  )
+                );
+              }),
+            
+            React.createElement("button", {
+              onClick: function() { setShowAddProject(true); },
+              className: "mobile-button w-full btn-primary mt-3"
+            }, " + 新增项目")
+          ),
+          
+          // 明细视图
+          currentView === 'details' && currentProject && React.createElement("div", { className: "p-4" },
+            React.createElement("h2", { className: "text-lg font-semibold mb-2" }, 
+              currentProject.name, " - 明细管理"
+            ),
+            
+            // 筛选区域
+            React.createElement("div", { className: "mb-3" },
+              React.createElement("select", {
+                value: detailFilterCategory,
+                onChange: function(e) { setDetailFilterCategory(e.target.value); },
+                className: "mobile-input w-full border border-gray-300 rounded-lg"
+              },
+                React.createElement("option", { value: "全部" }, "全部分项"),
+                categories.map(function(c) {
+                  return React.createElement("option", { key: c.id, value: c.name }, c.name);
+                })
+              )
+            ),
+            
+            // 操作区域 - 专门的按钮区域
+            React.createElement("div", { className: "action-area" },
+              React.createElement("button", {
+                onClick: function() {
+                  setNewDetailData({
+                    id: '',
+                    detailName: '',
+                    categoryId: categories[0] ? categories[0].id || '1' : '1',
+                    budgetArea: '',
+                    budgetQuantity: '',
+                    budgetCost: '',
+                    currentQuantity: '',
+                    currentCost: ''
+                  });
+                  setShowAddDetail(true);
+                },
+                className: "mobile-button btn-success"
+              }, "新增"),
+              React.createElement("button", {
+                onClick: exportDetails,
+                className: "mobile-button bg-blue-600 text-white"
+              }, "导出"),
+              React.createElement("button", {
+                onClick: downloadTemplate,
+                className: "mobile-button bg-gray-200 text-gray-700"
+              }, "下载模板"),
+              React.createElement("label", {
+                className: "mobile-button bg-green-600 text-white"
+              },
+                "导入",
+                React.createElement("input", {
+                  type: "file",
+                  accept: ".xlsx,.xls,.csv",
+                  onChange: function(e) {
+                    var file = e.target.files[0];
+                    if (file) {
+                      setFile(file);
+                      setImportModal(true);
+                    }
+                  },
+                  className: "hidden"
+                })
+              )
+            ),
+            
+            // 分项统计
+            React.createElement("div", { className: "card p-3 mb-3 shadow-sm" },
+              React.createElement("h3", { className: "card-title" }, "分项统计"),
+              Object.keys(categoryStats).length === 0 ?
+                React.createElement("p", { className: "text-gray-500 text-sm" }, "暂无数据") :
+                React.createElement("div", { className: "space-y-2" },
+                  Object.keys(categoryStats).map(function(name) {
+                    var stat = categoryStats[name];
+                    var progress = stat.budgetCost > 0 ? (stat.currentCost / stat.budgetCost * 100) : 0;
+                    
+                    return React.createElement("div", { key: name, className: "border-b border-gray-100 pb-2 last:border-b-0 last:pb-0" },
+                      React.createElement("div", { className: "flex justify-between items-center" },
+                        React.createElement("span", { className: "font-medium text-base" }, name),
+                        React.createElement("span", { className: "text-blue-600 font-medium" }, 
+                          "¥", stat.currentCost.toFixed(0), "/", stat.budgetCost.toFixed(0)
+                        )
+                      ),
+                      React.createElement("div", { className: "text-xs text-gray-500 mt-1" },
+                        "用量: ", stat.currentQuantity.toFixed(1), "/", stat.budgetQuantity.toFixed(1)
+                      ),
+                      React.createElement("div", { className: "progress-bar mt-1" },
+                        React.createElement("div", {
+                          className: "progress-fill",
+                          style: { width: Math.min(progress, 100) + "%" }
+                        })
+                      )
+                    );
+                  })
+                )
+            ),
+            
+            // 项目明细列表
+            filteredDetails.length === 0 ?
+              React.createElement("div", { className: "text-center py-8" },
+                React.createElement("div", { className: "text-gray-400 mb-2" },
+                  React.createElement("svg", { 
+                    className: "w-10 h-10 mx-auto", 
+                    fill: "none", 
+                    stroke: "currentColor", 
+                    viewBox: "0 0 24 24"
+                  },
+                    React.createElement("path", { 
+                      strokeLinecap: "round", 
+                      strokeLinejoin: "round", 
+                      strokeWidth: "2", 
+                      d: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
+                    })
+                  )
+                ),
+                React.createElement("p", { className: "text-gray-500 text-sm" }, "暂无明细")
+              ) :
+              filteredDetails.map(function(d) {
+                var cat = null;
+                for (var i = 0; i < categories.length; i++) {
+                  if (categories[i].id === d.categoryId) {
+                    cat = categories[i];
+                    break;
+                  }
+                }
+                return React.createElement("div", { key: d.id, className: "detail-card mobile-card bg-white mb-2" },
+                  React.createElement("div", { className: "p-3" },
+                    React.createElement("div", { className: "flex justify-between items-start" },
+                      React.createElement("div", null,
+                        React.createElement("h3", { className: "font-semibold text-base" }, d.detailName),
+                        React.createElement("p", { className: "text-xs text-gray-600 mt-1" },
+                          "分项: ", cat ? cat.name || '未知' : '未知'
+                        ),
+                        React.createElement("p", { className: "text-sm mt-1" },
+                          "预算: ¥", d.budgetCost, " | 使用: ¥", d.currentCost
+                        ),
+                        React.createElement("div", { className: "progress-bar mt-1" },
+                          React.createElement("div", {
+                            className: "progress-fill",
+                            style: { width: Math.min(d.progressPercent || 0, 100) + "%" }
+                          })
+                        ),
+                        React.createElement("p", { className: "text-xs text-gray-500 mt-1" },
+                          (d.progressPercent || 0).toFixed(1), "% 进展"
+                        )
+                      )
+                    ),
+                    
+                    // 细项按钮区域 - 专门的区域
+                    React.createElement("div", { className: "detail-actions" },
+                      React.createElement("button", {
+                        onClick: function() {
+                          setCurrentDetailId(d.id);
+                          setProgressModal(true);
+                        },
+                        className: "mobile-button btn-primary text-xs rounded px-1.5 py-1"
+                      }, "进度"),
+                      React.createElement("button", {
+                        onClick: function() {
+                          setCurrentDetailId(d.id);
+                          setBudgetModal(true);
+                        },
+                        className: "mobile-button btn-success text-xs rounded px-1.5 py-1"
+                      }, "预算"),
+                      React.createElement("button", {
+                        onClick: function() {
+                          setEditDetailData({
+                            id: d.id,
+                            detailName: d.detailName,
+                            categoryId: d.categoryId,
+                            budgetArea: d.budgetArea,
+                            budgetQuantity: d.budgetQuantity,
+                            budgetCost: d.budgetCost,
+                            currentQuantity: d.currentQuantity,
+                            currentCost: d.currentCost
+                          });
+                          setShowEditDetail(true);
+                        },
+                        className: "mobile-button text-blue-600 text-xs"
+                      }, "编辑"),
+                      React.createElement("button", {
+                        onClick: function() { deleteDetail(d.id); },
+                        className: "mobile-button text-red-600 text-xs"
+                      }, "删除")
+                    )
+                  )
+                );
+              })
+          ),
+          
+          // 项目表单
+          showAddProject && React.createElement(ProjectForm, {
+            onClose: function() { setShowAddProject(false); },
+            onSubmit: addProject,
+            projectStatuses: projectStatuses
+          }),
+          
+          showEditProject && React.createElement(ProjectForm, {
+            onClose: function() { setShowEditProject(false); },
+            onSubmit: updateProject,
+            projectStatuses: projectStatuses,
+            initialData: editProjectData
+          }),
+          
+          // 明细表单
+          showAddDetail && React.createElement(DetailForm, {
+            onClose: function() {
+              setShowAddDetail(false);
+              setNewDetailData({
+                id: '',
+                detailName: '',
+                categoryId: '',
+                budgetArea: '',
+                budgetQuantity: '',
+                budgetCost: '',
+                currentQuantity: '',
+                currentCost: ''
+              });
+            },
+            onSubmit: newDetailData.id ? updateDetail : addDetail,
+            categories: categories,
+            initialData: newDetailData,
+            isEdit: false
+          }),
+          
+          showEditDetail && React.createElement(DetailForm, {
+            onClose: function() {
+              setShowEditDetail(false);
+              setEditDetailData({});
+            },
+            onSubmit: updateDetail,
+            categories: categories,
+            initialData: editDetailData,
+            isEdit: true
+          }),
+          
+          // 导入确认弹窗
+          importModal && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+            React.createElement("div", { className: "bg-white rounded-xl p-4 max-w-md w-full" },
+              React.createElement("h3", { className: "text-lg font-semibold mb-3" }, "确认导入"),
+              React.createElement("p", null, "即将导入 ", file ? file.name : "", "，确认继续？"),
+              React.createElement("div", { className: "button-group mt-4" },
+                React.createElement("button", {
+                  onClick: function() { setImportModal(false); },
+                  className: "mobile-button btn-secondary"
+                }, "取消"),
+                React.createElement("button", {
+                  onClick: function() {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                      var data = new Uint8Array(e.target.result);
+                      var workbook = XLSX.read(data, { type: 'array' });
+                      var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                      var json = XLSX.utils.sheet_to_json(sheet);
+                      var newDetails = [];
+                      for (var i = 0; i < json.length; i++) {
+                        var row = json[i];
+                        var cat = null;
+                        for (var j = 0; j < categories.length; j++) {
+                          if (categories[j].name === row.分项名称) {
+                            cat = categories[j];
+                            break;
+                          }
+                        }
+                        newDetails.push({
+                          projectId: currentProjectId,
+                          detailName: row.详细名称 || '未命名',
+                          categoryId: cat ? cat.id : categories[0] ? categories[0].id || '1' : '1',
+                          budgetArea: parseFloat(row.预算面积) || null,
+                          budgetQuantity: parseFloat(row.预算用量) || 0,
+                          budgetCost: parseFloat(row.预算费用) || 0,
+                          currentQuantity: parseFloat(row.当前使用量) || 0,
+                          currentCost: parseFloat(row.当前使用费用) || 0,
+                          createdAt: new Date().toISOString(),
+                          progressItems: [],
+                          budgetItems: []
+                        });
+                      }
+                      
+                      // 过滤掉未命名的明细
+                      var filteredDetails = [];
+                      for (var i = 0; i < newDetails.length; i++) {
+                        if (newDetails[i].detailName !== '未命名') {
+                          filteredDetails.push(newDetails[i]);
+                        }
+                      }
+                      
+                      var batch = {};
+                      for (var i = 0; i < filteredDetails.length; i++) {
+                        var ref = db.ref('details').push();
+                        batch[ref.key] = filteredDetails[i];
+                      }
+                      
+                      db.ref('details').update(batch).then(function() {
+                        setDetails(function(prev) {
+                          var newDetails = [];
+                          for (var i = 0; i < prev.length; i++) {
+                            newDetails.push(prev[i]);
+                          }
+                          for (var key in batch) {
+                            if (batch.hasOwnProperty(key)) {
+                              newDetails.push({ id: key, projectId: batch[key].projectId, detailName: batch[key].detailName,
+                                              categoryId: batch[key].categoryId, budgetArea: batch[key].budgetArea,
+                                              budgetQuantity: batch[key].budgetQuantity, budgetCost: batch[key].budgetCost,
+                                              currentQuantity: batch[key].currentQuantity, currentCost: batch[key].currentCost,
+                                              createdAt: batch[key].createdAt, progressItems: batch[key].progressItems,
+                                              budgetItems: batch[key].budgetItems });
+                            }
+                          }
+                          return newDetails;
+                        });
+                        
+                        var project = null;
+                        for (var i = 0; i < projects.length; i++) {
+                          if (projects[i].id === currentProjectId) {
+                            project = projects[i];
+                            break;
+                          }
+                        }
+                        
+                        if (project) {
+                          var totalUsed = 0;
+                          for (var i = 0; i < details.length; i++) {
+                            if (details[i].projectId === currentProjectId) {
+                              totalUsed += details[i].currentCost;
+                            }
+                          }
+                          for (var key in batch) {
+                            if (batch.hasOwnProperty(key)) {
+                              totalUsed += batch[key].currentCost;
+                            }
+                          }
+                          
+                          var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
+                          var updatedProject = {
+                            id: project.id,
+                            name: project.name,
+                            status: project.status,
+                            budgetValue: project.budgetValue,
+                            budgetUsed: totalUsed,
+                            progressPercent: progress,
+                            userId: project.userId,
+                            createdAt: project.createdAt
+                          };
+                          updateProject(updatedProject);
+                        }
+                        
+                        setImportModal(false);
+                        setFile(null);
+                        alert('导入成功！');
+                      });
+                    };
+                    reader.readAsArrayBuffer(file);
+                  },
+                  className: "mobile-button btn-primary"
+                }, "确认导入")
+              )
+            )
+          ),
+          
+          // 进度弹窗
+          progressModal && currentDetailId && React.createElement(ProgressModal, {
+            detailId: currentDetailId,
+            onClose: function() {
+              setProgressModal(false);
+              setCurrentDetailId(null);
+            }
+          }),
+          
+          // 预算弹窗
+          budgetModal && currentDetailId && React.createElement(BudgetModal, {
+            detailId: currentDetailId,
+            onClose: function() {
+              setBudgetModal(false);
+              setCurrentDetailId(null);
+            }
+          }),
+          
+          // 用户管理弹窗
+          manageUsers && React.createElement(UserManagement, {
+            onClose: function() { setManageUsers(false); },
+            user: user,
+            ADMIN_EMAILS: ADMIN_EMAILS
+          }),
+          
+          // 加载提示
+          loading && React.createElement("div", { 
+            className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+          },
+            React.createElement("div", { className: "bg-white p-3 rounded-lg" },
+              React.createElement("div", { 
+                className: "inline-block animate-spin rounded-full h-6 w-6 border-3 border-blue-500 border-t-transparent" 
+              }),
+              React.createElement("p", { className: "mt-1 text-sm" }, "导出中...")
+            )
+          )
+        );
+      }
+
+      function ProjectForm(props) {
+        var onClose = props.onClose;
+        var onSubmit = props.onSubmit;
+        var projectStatuses = props.projectStatuses;
+        var initialData = props.initialData;
+        
+        var isEdit = !!initialData;
+        var formDataState = useState(initialData || {
+          name: '',
+          status: '项目规划中',
+          budgetValue: ''
+        });
+        var formData = formDataState[0];
+        var setFormData = formDataState[1];
+        
+        var handleSubmit = function(e) {
+          e.preventDefault();
+          onSubmit(formData);
+          onClose();
+        };
+        
+        return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50" },
+          React.createElement("div", { className: "mobile-modal bg-white w-full rounded-t-xl" },
+            React.createElement("div", { className: "modal-header" },
+              React.createElement("h3", { className: "text-lg font-semibold" }, 
+                isEdit ? "编辑项目" : "新增项目"
+              ),
+              React.createElement("button", {
+                onClick: onClose,
+                className: "text-gray-500 hover:text-gray-700"
+              }, "关闭")
+            ),
+            React.createElement("form", { onSubmit: handleSubmit, className: "modal-content" },
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "项目名称"),
+                React.createElement("input", {
+                  type: "text",
+                  required: true,
+                  value: formData.name,
+                  onChange: function(e) {
+                    setFormData({ name: e.target.value, status: formData.status, budgetValue: formData.budgetValue });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：青灡居主院改造"
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "项目状态"),
+                React.createElement("select", {
+                  value: formData.status,
+                  onChange: function(e) {
+                    setFormData({ name: formData.name, status: e.target.value, budgetValue: formData.budgetValue });
+                  },
+                  className: "mobile-input w-full input"
+                },
+                  projectStatuses.map(function(s) {
+                    return React.createElement("option", { key: s, value: s }, s);
+                  })
+                )
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "项目预算值(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  required: true,
+                  value: formData.budgetValue,
+                  onChange: function(e) {
+                    setFormData({ name: formData.name, status: formData.status, budgetValue: e.target.value });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：500000"
+                })
+              ),
+              React.createElement("div", { className: "button-group mt-4" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: onClose,
+                  className: "mobile-button btn-secondary"
+                }, "取消"),
+                React.createElement("button", {
+                  type: "submit",
+                  className: "mobile-button btn-primary"
+                }, isEdit ? "保存" : "添加")
+              )
+            )
+          )
+        );
+      }
+
+      function DetailForm(props) {
+        var onClose = props.onClose;
+        var onSubmit = props.onSubmit;
+        var categories = props.categories;
+        var initialData = props.initialData;
+        var isEdit = props.isEdit;
+        
+        var formDataState = useState(initialData.id ? {
+          detailName: initialData.detailName,
+          categoryId: initialData.categoryId,
+          budgetArea: initialData.budgetArea,
+          budgetQuantity: initialData.budgetQuantity,
+          budgetCost: initialData.budgetCost,
+          currentQuantity: initialData.currentQuantity,
+          currentCost: initialData.currentCost
+        } : {
+          detailName: '',
+          categoryId: categories[0] ? categories[0].id ? categories[0].id.toString() : '' : '',
+          budgetArea: '',
+          budgetQuantity: '',
+          budgetCost: '',
+          currentQuantity: '',
+          currentCost: ''
+        });
+        var formData = formDataState[0];
+        var setFormData = formDataState[1];
+        
+        var handleSubmit = function(e) {
+          e.preventDefault();
+          onSubmit(formData);
+          onClose();
+        };
+        
+        return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center p-4 z-50" },
+          React.createElement("div", { className: "mobile-modal bg-white w-full rounded-t-xl" },
+            React.createElement("div", { className: "modal-header" },
+              React.createElement("h3", { className: "text-lg font-semibold" }, 
+                isEdit ? "编辑明细" : "新增明细"
+              ),
+              React.createElement("button", {
+                onClick: onClose,
+                className: "text-gray-500 hover:text-gray-700"
+              }, "关闭")
+            ),
+            React.createElement("form", { onSubmit: handleSubmit, className: "modal-content" },
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "详细名称"),
+                React.createElement("input", {
+                  type: "text",
+                  required: true,
+                  value: formData.detailName,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: e.target.value,
+                      categoryId: formData.categoryId,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：北侧院墙砌筑",
+                  disabled: isEdit
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "分项名称"),
+                React.createElement("select", {
+                  value: formData.categoryId,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: e.target.value,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  required: true,
+                  disabled: isEdit
+                },
+                  categories.map(function(c) {
+                    return React.createElement("option", { key: c.id, value: c.id }, c.name);
+                  })
+                )
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "预算面积(㎡)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  value: formData.budgetArea,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: formData.categoryId,
+                      budgetArea: e.target.value,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：50"
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "预算用量"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.budgetQuantity,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: formData.categoryId,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: e.target.value,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：100"
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "预算费用(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.budgetCost,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: formData.categoryId,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: e.target.value,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：8000"
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "当前使用量"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.currentQuantity,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: formData.categoryId,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: e.target.value,
+                      currentCost: formData.currentCost
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：95"
+                })
+              ),
+              React.createElement("div", { className: "form-group" },
+                React.createElement("label", { 
+                  className: "form-label" 
+                }, "当前使用费用(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.currentCost,
+                  onChange: function(e) {
+                    setFormData({ 
+                      detailName: formData.detailName,
+                      categoryId: formData.categoryId,
+                      budgetArea: formData.budgetArea,
+                      budgetQuantity: formData.budgetQuantity,
+                      budgetCost: formData.budgetCost,
+                      currentQuantity: formData.currentQuantity,
+                      currentCost: e.target.value
+                    });
+                  },
+                  className: "mobile-input w-full input",
+                  placeholder: "例如：7600"
+                })
+              ),
+              React.createElement("div", { className: "button-group mt-4" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: onClose,
+                  className: "mobile-button btn-secondary"
+                }, "取消"),
+                React.createElement("button", {
+                  type: "submit",
+                  className: "mobile-button btn-primary"
+                }, isEdit ? "保存" : "添加")
+              )
+            )
+          )
+        );
+      }
+
+      // 关键修复：确保 createRoot 调用完全正确
+      try {
+        var container = document.getElementById('root');
+        if (container) {
+          var root = ReactDOM.createRoot(container);
+          root.render(React.createElement(App, null));
+        }
+      } catch (err) {
+        console.error('渲染失败:', err);
+        var rootDiv = document.getElementById('root');
+        if (rootDiv) {
+          rootDiv.innerHTML = "<div class=\"p-8 text-red-500 text-center\">应用加载失败: " + err.message + "</div>";
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
