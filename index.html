@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>青灡居成本与进展管理（精简版）</title>
+  <title>青灡居成本与进展管理</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -13,11 +13,16 @@
   <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* 内联关键 CSS */
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; color: #1f2937; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background-color: #f9fafb; 
+      color: #1f2937; 
+      margin: 0;
+      padding: 0;
+    }
     .p-4 { padding: 1rem; }
     .p-6 { padding: 1.5rem; }
     .p-8 { padding: 2rem; }
-    .m-4 { margin: 1rem; }
     .mb-2 { margin-bottom: 0.5rem; }
     .mb-3 { margin-bottom: 0.75rem; }
     .mb-4 { margin-bottom: 1rem; }
@@ -26,16 +31,10 @@
     .mt-3 { margin-top: 0.75rem; }
     .mt-4 { margin-top: 1rem; }
     .mt-6 { margin-top: 1.5rem; }
-    .mx-auto { margin-left: auto; margin-right: auto; }
     .flex { display: flex; }
-    .block { display: block; }
-    .inline-block { display: inline-block; }
-    .flex-col { flex-direction: column; }
     .items-center { align-items: center; }
     .justify-between { justify-content: space-between; }
     .text-center { text-align: center; }
-    .text-left { text-align: left; }
-    .text-right { text-align: right; }
     .font-bold { font-weight: 700; }
     .font-medium { font-weight: 500; }
     .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
@@ -57,20 +56,14 @@
     .text-white { color: #ffffff; }
     .rounded { border-radius: 0.25rem; }
     .rounded-lg { border-radius: 0.5rem; }
-    .rounded-full { border-radius: 9999px; }
     .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
     .border { border-width: 1px; }
-    .border-0 { border-width: 0; }
     .border-gray-200 { border-color: #e5e7eb; }
-    .border-gray-300 { border-color: #d1d5db; }
     .w-full { width: 100%; }
     .max-w-md { max-width: 28rem; }
     .max-w-lg { max-width: 32rem; }
     .max-w-xl { max-width: 36rem; }
     .max-w-2xl { max-width: 42rem; }
-    .h-6 { height: 1.5rem; }
-    .h-full { height: 100%; }
-    .overflow-y-auto { overflow-y: auto; }
     .fixed { position: fixed; }
     .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
     .z-50 { z-index: 50; }
@@ -78,7 +71,6 @@
     .space-y-3 > * + * { margin-top: 0.75rem; }
     .space-y-4 > * + * { margin-top: 1rem; }
     .cursor-pointer { cursor: pointer; }
-    .opacity-50 { opacity: 0.5; }
     .bg-opacity-50 { background-color: rgba(0, 0, 0, 0.5); }
     .grid { display: grid; }
     .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
@@ -428,7 +420,6 @@
 
         var fileInputRef = useRef(null);
         var progressFileInputRef = useRef(null);
-        var budgetFileInputRef = useRef(null);
         var projectStatuses = ['\u9879\u76EE\u89C4\u5212\u4E2D', '\u9879\u76EE\u5DF2\u542F\u52A8', '\u6846\u67B6\u5EFA\u8BBE\u4E2D', '\u6846\u67B6\u5DF2\u5B8C\u6210', '\u9879\u76EE\u88C5\u4FEE\u4E2D', '\u9879\u76EE\u5DF2\u5B8C\u6210'];
 
         useEffect(function () {
@@ -819,7 +810,6 @@
           XLSX.writeFile(wb, '\u9752\u71C9\u5C45-\u5DE5\u7A0B\u8FDB\u5EA6\u5BFC\u5165\u6A21\u677F.xlsx');
         };
 
-        // 移除了图片上传相关代码
         var addBudgetItem = function addBudgetItem(detailId, item) {
           var ref = db.ref("details/".concat(detailId, "/budgetItems")).push();
           ref.set(_objectSpread(_objectSpread({}, item), {}, {
@@ -1123,7 +1113,6 @@
           }, "\u5173\u95ED")));
         };
 
-        // 预算申请弹窗（已移除图片上传功能）
         var BudgetModal = function BudgetModal(_ref7) {
           var detailId = _ref7.detailId,
               onClose = _ref7.onClose;
@@ -1811,7 +1800,7 @@
         }, isEdit ? '\u4FDD\u5B58' : '\u6DFB\u52A0'))));
       }
 
-      // 确保 createRoot 后无任何空字符
+      // 关键修复：确保 createRoot 后无任何空字符，括号完全匹配
       try {
         var container = document.getElementById('root');
         if (container) {
@@ -1822,7 +1811,7 @@
         console.error('渲染失败:', err);
         var rootDiv = document.getElementById('root');
         if (rootDiv) {
-          rootDiv.innerHTML = "<div class=\"p-8 text-red-500 text-center\">应用加载失败: ".concat(err.message, "</div>");
+          rootDiv.innerHTML = "<div class=\"p-8 text-red-500 text-center\">应用加载失败: " + err.message + "</div>";
         }
       }
     })();
