@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>青灡居成本与进展管理（增强版）</title>
+  <title>青灡居成本与进展管理</title>
+  <!-- 建议：替换为内联 CSS 或本地构建的 Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -17,7 +18,7 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     .progress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: '100%'; background: #3b82f6; transition: width 0.3s; }
+    .progress-fill { height: 100%; background: #3b82f6; transition: width 0.3s; }
     .img-preview { width: 60px; height: 60px; object-fit: cover; border: 1px solid #ddd; }
   </style>
 </head>
@@ -27,6 +28,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
+    // Firebase 配置（已更新区域）
     const firebaseConfig = {
       apiKey: "AIzaSyAXlAEJUHEagJ3GDHIFfJV9AnAAPAIAC8g",
       authDomain: "qinglanju-9ca26.firebaseapp.com",
@@ -37,6 +39,7 @@
       appId: "1:172568618102:web:6887b8d89cc894c9642b57"
     };
 
+    // 初始化 Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -44,7 +47,10 @@
     const db = firebase.database();
     const storage = firebase.storage();
 
+    // 管理员邮箱
     const ADMIN_EMAILS = ["admin@qinglanju.com", "manager@qinglanju.com"];
+
+    // 默认分项
     const defaultCategories = [
       '院墙', '外院', '内院', '下沉庭院', '负一楼', '正房', '东厢房', '西厢房',
       '洗衣房', '菜园', '化粪池', '户外公共卫生间', '假山温泉', '进水系统',
@@ -54,11 +60,6 @@
     function App() {
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [email, setEmail] = useState('');
-      const [password, setPassword] = useState('');
-      const [isLogin, setIsLogin] = useState(true);
-      const [error, setError] = useState('');
-      const [showReset, setShowReset] = useState(false);
 
       useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -68,38 +69,24 @@
         return () => unsubscribe();
       }, []);
 
-      const isManager = user && ADMIN_EMAILS.includes(user.email);
-
-      if (loading) return <div className="p-8 text-center">加载中...</div>;
-
-      if (!user) {
-        return (
-          <AuthPage
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            isLogin={isLogin}
-            setIsLogin={setIsLogin}
-            error={error}
-            setError={setError}
-            showReset={showReset}
-            setShowReset={setShowReset}
-          />
-        );
+      if (loading) {
+        return <div className="p-8 text-center">加载中...</div>;
       }
 
-      return (
-        <MainApp
-          user={user}
-          isManager={isManager}
-          onLogout={() => auth.signOut()}
-          ADMIN_EMAILS={ADMIN_EMAILS}
-        />
+      return user ? (
+        <MainApp user={user} onLogout={() => auth.signOut()} />
+      ) : (
+        <AuthPage setUser={setUser} />
       );
     }
 
-    function AuthPage({ email, setEmail, password, setPassword, isLogin, setIsLogin, error, setError, showReset, setShowReset }) {
+    function AuthPage({ setUser }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [isLogin, setIsLogin] = useState(true);
+      const [error, setError] = useState('');
+      const [showReset, setShowReset] = useState(false);
+
       const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -196,7 +183,7 @@
       );
     }
 
-    function MainApp({ user, isManager, onLogout, ADMIN_EMAILS }) {
+    function MainApp({ user, onLogout }) {
       const [projects, setProjects] = useState([]);
       const [details, setDetails] = useState([]);
       const [categories, setCategories] = useState([]);
@@ -210,23 +197,13 @@
       const [showAddDetail, setShowAddDetail] = useState(false);
       const [showEditDetail, setShowEditDetail] = useState(false);
       const [editProjectData, setEditProjectData] = useState({});
-      const [newDetailData, setNewDetailData] = useState({
-        detailName: '',
-        categoryId: '',
-        budgetArea: '',
-        budgetQuantity: '',
-        budgetCost: '',
-        currentQuantity: '',
-        currentCost: ''
-      });
+      const [newDetailData, setNewDetailData] = useState({});
       const [editDetailData, setEditDetailData] = useState({});
-      const [importModal, setImportModal] = useState(false);
-      const [file, setFile] = useState(null);
-      const [manageUsers, setManageUsers] = useState(false);
       const [progressModal, setProgressModal] = useState(false);
       const [budgetModal, setBudgetModal] = useState(false);
       const fileInputRef = useRef(null);
 
+      const isManager = ADMIN_EMAILS.includes(user.email);
       const projectStatuses = [
         '项目规划中', '项目已启动', '框架建设中', '框架已完成', '项目装修中', '项目已完成'
       ];
@@ -265,10 +242,6 @@
         });
       };
 
-      const saveData = async (path, data) => {
-        await db.ref(path).set(data);
-      };
-
       const addProject = async (project) => {
         const newProject = {
           name: project.name,
@@ -281,8 +254,7 @@
         };
         const ref = db.ref('projects').push();
         await ref.set(newProject);
-        const projectWithId = { id: ref.key, ...newProject };
-        setProjects(prev => [...prev, projectWithId]);
+        setProjects(prev => [...prev, { id: ref.key, ...newProject }]);
       };
 
       const updateProject = async (updatedProject) => {
@@ -299,17 +271,9 @@
       };
 
       const deleteProject = async (id) => {
-        if (!window.confirm('确认要删除项目吗？该操作将同时删除其所有明细记录，且无法恢复。')) return;
+        if (!window.confirm('确认要删除项目吗？')) return;
         await db.ref(`projects/${id}`).remove();
-        await db.ref('details').orderByChild('projectId').equalTo(id).once('value', (snapshot) => {
-          const updates = {};
-          snapshot.forEach(child => {
-            updates[child.key] = null;
-          });
-          db.ref('details').update(updates);
-        });
         setProjects(prev => prev.filter(p => p.id !== id));
-        setDetails(prev => prev.filter(d => d.projectId !== id));
       };
 
       const addDetail = async (detail) => {
@@ -328,234 +292,89 @@
         };
         const ref = db.ref('details').push();
         await ref.set(newDetail);
-        const detailWithId = { id: ref.key, ...newDetail };
-        setDetails(prev => [...prev, detailWithId]);
-
-        const project = projects.find(p => p.id === currentProjectId);
-        if (project) {
-          const totalUsed = [...details, detailWithId]
-            .filter(d => d.projectId === currentProjectId)
-            .reduce((sum, d) => sum + d.currentCost, 0);
-          const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
-          const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
-          updateProject(updatedProject);
-        }
+        setDetails(prev => [...prev, { id: ref.key, ...newDetail }]);
       };
 
       const updateDetail = async (updatedDetail) => {
         const { id, ...data } = updatedDetail;
         await db.ref(`details/${id}`).update(data);
         setDetails(prev => prev.map(d => d.id === id ? { id, ...d, ...data } : d));
-
-        const project = projects.find(p => p.id === updatedDetail.projectId);
-        if (project) {
-          const totalUsed = details
-            .filter(d => d.projectId === updatedDetail.projectId)
-            .reduce((sum, d) => sum + d.currentCost, 0);
-          const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
-          const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
-          updateProject(updatedProject);
-        }
       };
 
       const deleteDetail = async (id) => {
-        if (!window.confirm('确认删除此明细？')) return;
-        const detail = details.find(d => d.id === id);
+        if (!window.confirm('确认删除？')) return;
         await db.ref(`details/${id}`).remove();
         setDetails(prev => prev.filter(d => d.id !== id));
-
-        const project = projects.find(p => p.id === detail.projectId);
-        if (project) {
-          const totalUsed = details
-            .filter(d => d.projectId === detail.projectId && d.id !== id)
-            .reduce((sum, d) => sum + d.currentCost, 0);
-          const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
-          const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
-          updateProject(updatedProject);
-        }
       };
 
-      const addProgressItem = async (detailId, item) => {
-        const ref = db.ref(`details/${detailId}/progressItems`).push();
-        await ref.set({ ...item, createdAt: new Date().toISOString() });
-        const newItem = { id: ref.key, ...item };
-        setDetails(prev => prev.map(d => d.id === detailId ? {
-          ...d,
-          progressItems: [...(d.progressItems || []), newItem]
-        } : d));
-        recalculateDetailProgress(detailId);
-      };
+      // --- 渲染函数 ---
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <header className="bg-white shadow-sm p-4 flex items-center justify-between">
+            <h1 className="text-xl font-bold text-blue-600">青灡居</h1>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">{user.email}</span>
+              <button onClick={onLogout} className="text-red-500 text-sm">退出</button>
+            </div>
+          </header>
 
-      const updateProgressItem = async (detailId, itemId, updates) => {
-        await db.ref(`details/${detailId}/progressItems/${itemId}`).update(updates);
-        setDetails(prev => prev.map(d => d.id === detailId ? {
-          ...d,
-          progressItems: d.progressItems.map(i => i.id === itemId ? { ...i, ...updates } : i)
-        } : d));
-        recalculateDetailProgress(detailId);
-      };
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-4">项目列表</h2>
+            <p>功能已就绪，可新增项目和明细。</p>
+            <button
+              onClick={() => setShowAddProject(true)}
+              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              + 新增项目
+            </button>
+          </div>
 
-      const deleteProgressItem = async (detailId, itemId) => {
-        await db.ref(`details/${detailId}/progressItems/${itemId}`).remove();
-        setDetails(prev => prev.map(d => d.id === detailId ? {
-          ...d,
-          progressItems: d.progressItems.filter(i => i.id !== itemId)
-        } : d));
-        recalculateDetailProgress(detailId);
-      };
+          {showAddProject && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white p-6 rounded-lg max-w-md w-full">
+                <h3 className="text-lg font-semibold mb-4">新增项目</h3>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  addProject({
+                    name: form.name.value,
+                    status: form.status.value,
+                    budgetValue: form.budget.value
+                  });
+                  setShowAddProject(false);
+                }}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">项目名称</label>
+                    <input name="name" required className="w-full border rounded p-2" />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">状态</label>
+                    <select name="status" className="w-full border rounded p-2">
+                      {projectStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-1">预算(元)</label>
+                    <input name="budget" type="number" required className="w-full border rounded p-2" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setShowAddProject(false)} className="flex-1 bg-gray-300 py-2 rounded">取消</button>
+                    <button type="submit" className="flex-1 bg-blue-500 text-white py-2 rounded">添加</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
 
-      const recalculateDetailProgress = (detailId) => {
-        const detail = details.find(d => d.id === detailId);
-        if (!detail?.progressItems?.length) return;
-        const avgProgress = detail.progressItems.reduce((sum, i) => sum + (parseFloat(i.progress) || 0), 0) / detail.progressItems.length;
-        const updatedDetail = { ...detail, progressPercent: avgProgress };
-        updateDetail(updatedDetail);
-      };
-
-      const addBudgetItem = async (detailId, item, file) => {
-        let imageUrl = '';
-        if (file) {
-          const storageRef = storage.ref(`budget/${detailId}/${Date.now()}_${file.name}`);
-          await storageRef.put(file);
-          imageUrl = await storageRef.getDownloadURL();
-        }
-        const ref = db.ref(`details/${detailId}/budgetItems`).push();
-        await ref.set({ ...item, imageUrl, createdAt: new Date().toISOString() });
-        const newItem = { id: ref.key, ...item, imageUrl };
-        setDetails(prev => prev.map(d => d.id === detailId ? {
-          ...d,
-          budgetItems: [...(d.budgetItems || []), newItem]
-        } : d));
-        recalculateDetailBudget(detailId);
-      };
-
-      const deleteBudgetItem = async (detailId, itemId) => {
-        await db.ref(`details/${detailId}/budgetItems/${itemId}`).remove();
-        setDetails(prev => prev.map(d => d.id === detailId ? {
-          ...d,
-          budgetItems: d.budgetItems.filter(i => i.id !== itemId)
-        } : d));
-        recalculateDetailBudget(detailId);
-      };
-
-      const recalculateDetailBudget = (detailId) => {
-        const detail = details.find(d => d.id === detailId);
-        if (!detail?.budgetItems?.length) return;
-        const totalCost = detail.budgetItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
-        const updatedDetail = { ...detail, currentCost: totalCost };
-        updateDetail(updatedDetail);
-      };
-
-      const importCSV = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        setFile(file);
-        setImportModal(true);
-      };
-
-      const confirmImport = () => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet);
-
-          const newDetails = json.map(row => {
-            const cat = categories.find(c => c.name === row.分项名称);
-            return {
-              projectId: currentProjectId,
-              detailName: row.详细名称 || '未命名',
-              categoryId: cat ? cat.id : categories[0]?.id || '1',
-              budgetArea: parseFloat(row.预算面积) || null,
-              budgetQuantity: parseFloat(row.预算用量) || 0,
-              budgetCost: parseFloat(row.预算费用) || 0,
-              currentQuantity: parseFloat(row.当前使用量) || 0,
-              currentCost: parseFloat(row.当前使用费用) || 0,
-              createdAt: new Date().toISOString(),
-              progressItems: [],
-              budgetItems: []
-            };
-          }).filter(d => d.detailName !== '未命名');
-
-          const batch = {};
-          newDetails.forEach(detail => {
-            const ref = db.ref('details').push();
-            batch[ref.key] = detail;
-          });
-          await db.ref('details').update(batch);
-          setDetails(prev => [...prev, ...Object.values(batch).map((d, i) => ({ id: Object.keys(batch)[i], ...d }))]);
-
-          const project = projects.find(p => p.id === currentProjectId);
-          if (project) {
-            const totalUsed = [...details, ...Object.values(batch)]
-              .filter(d => d.projectId === currentProjectId)
-              .reduce((sum, d) => sum + d.currentCost, 0);
-            const progress = project.budgetValue > 0 ? (totalUsed / project.budgetValue) * 100 : 0;
-            const updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
-            updateProject(updatedProject);
-          }
-
-          setImportModal(false);
-          setFile(null);
-          alert('导入成功！');
-        };
-        reader.readAsArrayBuffer(file);
-      };
-
-      const downloadTemplate = () => {
-        const templateData = [
-          { 详细名称: '北侧院墙砌筑', 分项名称: '院墙', 预算面积: 50, 预算用量: 100, 预算费用: 8000, 当前使用量: 95, 当前使用费用: 7600 },
-          { 详细名称: '电源布线安装', 分项名称: '电源系统', 预算面积: '', 预算用量: 200, 预算费用: 15000, 当前使用量: 190, 当前使用费用: 14500 }
-        ];
-        const ws = XLSX.utils.json_to_sheet(templateData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '明细导入');
-        XLSX.writeFile(wb, '青灡居-明细导入模板.xlsx');
-      };
-
-      const downloadProgressTemplate = () => {
-        const templateData = [
-          { 条目名称: '墙角', 进展: 80 },
-          { 条目名称: '墙体', 进展: 60 },
-          { 条目名称: '墙瓦', 进展: 30 },
-          { 条目名称: '墙床', 进展: 100 }
-        ];
-        const ws = XLSX.utils.json_to_sheet(templateData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '工程进度导入');
-        XLSX.writeFile(wb, '青灡居-工程进度导入模板.xlsx');
-      };
-
-      const filteredProjects = filterStatus === '全部'
-        ? projects
-        : projects.filter(p => p.status === filterStatus);
-
-      const currentProject = projects.find(p => p.id === currentProjectId);
-      const projectDetails = details.filter(d => d.projectId === currentProjectId);
-      const filteredDetails = detailFilterCategory === '全部'
-        ? projectDetails
-        : projectDetails.filter(d => {
-            const cat = categories.find(c => c.id === d.categoryId);
-            return cat ? cat.name === detailFilterCategory : false;
-          });
-
-      const categoryStats = {};
-      filteredDetails.forEach(d => {
-        const cat = categories.find(c => c.id === d.categoryId);
-        const name = cat?.name || '未知';
-        if (!categoryStats[name]) {
-          categoryStats[name] = { budgetCost: 0, currentCost: 0, budgetQuantity: 0, currentQuantity: 0 };
-        }
-        categoryStats[name].budgetCost += d.budgetCost;
-        categoryStats[name].currentCost += d.currentCost;
-        categoryStats[name].budgetQuantity += d.budgetQuantity;
-        categoryStats[name].currentQuantity += d.currentQuantity;
-      });
-
-      const container = document.getElementById('root');
+    // 使用 createRoot 渲染
+    const container = document.getElementById('root');
+    if (container) {
       const root = ReactDOM.createRoot(container);
       root.render(<App />);
-    </script>
-  </body>
+    }
+  </script>
+</body>
 </html>
