@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>青灡居成本与进展管理</title>
+  <title>青灡居成本与进展管理（增强版）</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,41 +11,40 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
   <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     .progress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
     .progress-fill { height: '100%'; background: #3b82f6; transition: width 0.3s; }
+    .img-preview { width: 60px; height: 60px; object-fit: cover; border: 1px solid #ddd; }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
-    // 🔥 Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyAXlAEJUHEagJ3GDHIFfJV9AnAAPAIAC8g",
       authDomain: "qinglanju-9ca26.firebaseapp.com",
-      databaseURL: "https://qinglanju-9ca26-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      databaseURL: "https://qinglanju-9ca26-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "qinglanju-9ca26",
       storageBucket: "qinglanju-9ca26.firebasestorage.app",
       messagingSenderId: "172568618102",
       appId: "1:172568618102:web:6887b8d89cc894c9642b57"
     };
 
-    // 初始化 Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     const auth = firebase.auth();
     const db = firebase.database();
+    const storage = firebase.storage();
 
-    // 管理员邮箱列表（可扩展为数据库存储）
     const ADMIN_EMAILS = ["admin@qinglanju.com", "manager@qinglanju.com"];
-
     const defaultCategories = [
       '院墙', '外院', '内院', '下沉庭院', '负一楼', '正房', '东厢房', '西厢房',
       '洗衣房', '菜园', '化粪池', '户外公共卫生间', '假山温泉', '进水系统',
@@ -100,7 +99,6 @@
       );
     }
 
-    // 登录/注册页面
     function AuthPage({ email, setEmail, password, setPassword, isLogin, setIsLogin, error, setError, showReset, setShowReset }) {
       const handleSubmit = async (e) => {
         e.preventDefault();
@@ -114,7 +112,6 @@
             await auth.signInWithEmailAndPassword(email, password);
           } else {
             await auth.createUserWithEmailAndPassword(email, password);
-            // 新用户自动创建默认 categories
             const userId = auth.currentUser.uid;
             const userRef = db.ref(`users/${userId}`);
             const snapshot = await userRef.once('value');
@@ -140,7 +137,6 @@
             <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">
               {showReset ? '重置密码' : isLogin ? '登录' : '注册'}
             </h2>
-
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">邮箱</label>
@@ -166,14 +162,11 @@
                   />
                 </div>
               )}
-
               {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-
               <div className="space-y-3">
                 <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
                   {showReset ? '发送重置链接' : isLogin ? '登录' : '注册'}
                 </button>
-
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -192,27 +185,32 @@
                 </div>
               </div>
             </form>
-
+            <div className="mt-6 text-center text-sm text-gray-500">
+              <p>示例账号：</p>
+              <p>管理员: <code>admin@qinglanju.com</code></p>
+              <p>普通用户: <code>user@qinglanju.com</code></p>
+              <p>密码: <code>123456</code></p>
+            </div>
           </div>
         </div>
       );
     }
 
-    // 主应用
     function MainApp({ user, isManager, onLogout, ADMIN_EMAILS }) {
       const [projects, setProjects] = useState([]);
       const [details, setDetails] = useState([]);
       const [categories, setCategories] = useState([]);
       const [currentView, setCurrentView] = useState('projects');
       const [currentProjectId, setCurrentProjectId] = useState(null);
+      const [currentDetailId, setCurrentDetailId] = useState(null);
       const [filterStatus, setFilterStatus] = useState('全部');
       const [detailFilterCategory, setDetailFilterCategory] = useState('全部');
       const [showAddProject, setShowAddProject] = useState(false);
       const [showEditProject, setShowEditProject] = useState(false);
       const [showAddDetail, setShowAddDetail] = useState(false);
+      const [showEditDetail, setShowEditDetail] = useState(false);
       const [editProjectData, setEditProjectData] = useState({});
       const [newDetailData, setNewDetailData] = useState({
-        id: '',
         detailName: '',
         categoryId: '',
         budgetArea: '',
@@ -221,9 +219,13 @@
         currentQuantity: '',
         currentCost: ''
       });
+      const [editDetailData, setEditDetailData] = useState({});
       const [importModal, setImportModal] = useState(false);
       const [file, setFile] = useState(null);
-      const [manageUsers, setManageUsers] = useState(false); // 管理员功能
+      const [manageUsers, setManageUsers] = useState(false);
+      const [progressModal, setProgressModal] = useState(false);
+      const [budgetModal, setBudgetModal] = useState(false);
+      const fileInputRef = useRef(null);
 
       const projectStatuses = [
         '项目规划中', '项目已启动', '框架建设中', '框架已完成', '项目装修中', '项目已完成'
@@ -246,7 +248,6 @@
         };
         setCategories(userData.categories || []);
 
-        // 加载项目：管理员看所有，普通用户看自己的
         const projectsRef = isManager
           ? db.ref('projects')
           : db.ref('projects').orderByChild('userId').equalTo(userId);
@@ -257,8 +258,7 @@
           setProjects(projectList);
         });
 
-        // 加载明细
-        db.ref('details').orderByChild('projectId').on('value', (snapshot) => {
+        db.ref('details').on('value', (snapshot) => {
           const data = snapshot.val() || {};
           const detailList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
           setDetails(detailList);
@@ -290,7 +290,6 @@
         await db.ref(`projects/${id}`).set(data);
         setProjects(prev => prev.map(p => p.id === id ? { id, ...data } : p));
 
-        // 更新预算使用
         const projectDetails = details.filter(d => d.projectId === id);
         const totalUsed = projectDetails.reduce((sum, d) => sum + (parseFloat(d.currentCost) || 0), 0);
         const progress = data.budgetValue > 0 ? (totalUsed / data.budgetValue) * 100 : 0;
@@ -323,14 +322,15 @@
           budgetCost: parseFloat(detail.budgetCost) || 0,
           currentQuantity: parseFloat(detail.currentQuantity) || 0,
           currentCost: parseFloat(detail.currentCost) || 0,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          progressItems: [],
+          budgetItems: []
         };
         const ref = db.ref('details').push();
         await ref.set(newDetail);
         const detailWithId = { id: ref.key, ...newDetail };
         setDetails(prev => [...prev, detailWithId]);
 
-        // 更新项目
         const project = projects.find(p => p.id === currentProjectId);
         if (project) {
           const totalUsed = [...details, detailWithId]
@@ -344,8 +344,8 @@
 
       const updateDetail = async (updatedDetail) => {
         const { id, ...data } = updatedDetail;
-        await db.ref(`details/${id}`).set(data);
-        setDetails(prev => prev.map(d => d.id === id ? { id, ...data } : d));
+        await db.ref(`details/${id}`).update(data);
+        setDetails(prev => prev.map(d => d.id === id ? { id, ...d, ...data } : d));
 
         const project = projects.find(p => p.id === updatedDetail.projectId);
         if (project) {
@@ -375,6 +375,77 @@
         }
       };
 
+      const addProgressItem = async (detailId, item) => {
+        const ref = db.ref(`details/${detailId}/progressItems`).push();
+        await ref.set({ ...item, createdAt: new Date().toISOString() });
+        const newItem = { id: ref.key, ...item };
+        setDetails(prev => prev.map(d => d.id === detailId ? {
+          ...d,
+          progressItems: [...(d.progressItems || []), newItem]
+        } : d));
+        recalculateDetailProgress(detailId);
+      };
+
+      const updateProgressItem = async (detailId, itemId, updates) => {
+        await db.ref(`details/${detailId}/progressItems/${itemId}`).update(updates);
+        setDetails(prev => prev.map(d => d.id === detailId ? {
+          ...d,
+          progressItems: d.progressItems.map(i => i.id === itemId ? { ...i, ...updates } : i)
+        } : d));
+        recalculateDetailProgress(detailId);
+      };
+
+      const deleteProgressItem = async (detailId, itemId) => {
+        await db.ref(`details/${detailId}/progressItems/${itemId}`).remove();
+        setDetails(prev => prev.map(d => d.id === detailId ? {
+          ...d,
+          progressItems: d.progressItems.filter(i => i.id !== itemId)
+        } : d));
+        recalculateDetailProgress(detailId);
+      };
+
+      const recalculateDetailProgress = (detailId) => {
+        const detail = details.find(d => d.id === detailId);
+        if (!detail?.progressItems?.length) return;
+        const avgProgress = detail.progressItems.reduce((sum, i) => sum + (parseFloat(i.progress) || 0), 0) / detail.progressItems.length;
+        const updatedDetail = { ...detail, progressPercent: avgProgress };
+        updateDetail(updatedDetail);
+      };
+
+      const addBudgetItem = async (detailId, item, file) => {
+        let imageUrl = '';
+        if (file) {
+          const storageRef = storage.ref(`budget/${detailId}/${Date.now()}_${file.name}`);
+          await storageRef.put(file);
+          imageUrl = await storageRef.getDownloadURL();
+        }
+        const ref = db.ref(`details/${detailId}/budgetItems`).push();
+        await ref.set({ ...item, imageUrl, createdAt: new Date().toISOString() });
+        const newItem = { id: ref.key, ...item, imageUrl };
+        setDetails(prev => prev.map(d => d.id === detailId ? {
+          ...d,
+          budgetItems: [...(d.budgetItems || []), newItem]
+        } : d));
+        recalculateDetailBudget(detailId);
+      };
+
+      const deleteBudgetItem = async (detailId, itemId) => {
+        await db.ref(`details/${detailId}/budgetItems/${itemId}`).remove();
+        setDetails(prev => prev.map(d => d.id === detailId ? {
+          ...d,
+          budgetItems: d.budgetItems.filter(i => i.id !== itemId)
+        } : d));
+        recalculateDetailBudget(detailId);
+      };
+
+      const recalculateDetailBudget = (detailId) => {
+        const detail = details.find(d => d.id === detailId);
+        if (!detail?.budgetItems?.length) return;
+        const totalCost = detail.budgetItems.reduce((sum, i) => sum + (parseFloat(i.amount) || 0), 0);
+        const updatedDetail = { ...detail, currentCost: totalCost };
+        updateDetail(updatedDetail);
+      };
+
       const importCSV = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -401,7 +472,9 @@
               budgetCost: parseFloat(row.预算费用) || 0,
               currentQuantity: parseFloat(row.当前使用量) || 0,
               currentCost: parseFloat(row.当前使用费用) || 0,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              progressItems: [],
+              budgetItems: []
             };
           }).filter(d => d.detailName !== '未命名');
 
@@ -441,6 +514,19 @@
         XLSX.writeFile(wb, '青灡居-明细导入模板.xlsx');
       };
 
+      const downloadProgressTemplate = () => {
+        const templateData = [
+          { 条目名称: '墙角', 进展: 80 },
+          { 条目名称: '墙体', 进展: 60 },
+          { 条目名称: '墙瓦', 进展: 30 },
+          { 条目名称: '墙床', 进展: 100 }
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '工程进度导入');
+        XLSX.writeFile(wb, '青灡居-工程进度导入模板.xlsx');
+      };
+
       const filteredProjects = filterStatus === '全部'
         ? projects
         : projects.filter(p => p.status === filterStatus);
@@ -467,531 +553,9 @@
         categoryStats[name].currentQuantity += d.currentQuantity;
       });
 
-      return (
-        <div className="min-h-screen">
-          <header className="bg-white shadow-sm p-4 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-blue-600">青灡居</h1>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                {isManager ? '管理员' : '用户'}: {user.email}
-              </span>
-              <button
-                onClick={() => setManageUsers(true)}
-                className="text-xs bg-gray-200 px-2 py-1 rounded"
-              >
-                用户管理
-              </button>
-              <button
-                onClick={onLogout}
-                className="text-red-500 text-sm"
-              >
-                退出
-              </button>
-            </div>
-          </header>
-
-          {currentView === 'projects' && (
-            <div className="p-4">
-              <div className="mb-4">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="border rounded p-2"
-                >
-                  <option value="全部">全部</option>
-                  {projectStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              {filteredProjects.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">暂无项目</p>
-              ) : (
-                filteredProjects.map(p => (
-                  <div key={p.id} className="bg-white p-4 mb-4 rounded-lg shadow">
-                    <h2 className="font-semibold">{p.name}</h2>
-                    <p className="text-sm text-gray-600">{p.status}</p>
-                    <p className="text-sm mt-1">预算：¥{p.budgetValue.toLocaleString()} / ¥{p.budgetUsed.toLocaleString()}</p>
-                    <div className="progress-bar mt-2">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${Math.min(p.progressPercent, 100)}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{p.progressPercent.toFixed(1)}% 进展</p>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => {
-                          setCurrentProjectId(p.id);
-                          setCurrentView('details');
-                        }}
-                        className="bg-green-500 text-white text-xs px-3 py-1 rounded"
-                      >
-                        明细
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditProjectData(p);
-                          setShowEditProject(true);
-                        }}
-                        className="bg-yellow-500 text-white text-xs px-3 py-1 rounded"
-                      >
-                        编辑
-                      </button>
-                      <button
-                        onClick={() => deleteProject(p.id)}
-                        className="bg-red-500 text-white text-xs px-3 py-1 rounded"
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-              <button
-                onClick={() => setShowAddProject(true)}
-                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-full text-sm shadow"
-              >
-                + 新增项目
-              </button>
-            </div>
-          )}
-
-          {currentView === 'details' && currentProject && (
-            <div className="p-4">
-              <h2 className="text-lg font-semibold mb-2">{currentProject.name} - 明细管理</h2>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <select
-                  value={detailFilterCategory}
-                  onChange={(e) => setDetailFilterCategory(e.target.value)}
-                  className="border rounded p-2 text-sm"
-                >
-                  <option value="全部">全部分项</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => {
-                    setNewDetailData({
-                      id: '',
-                      detailName: '',
-                      categoryId: categories[0]?.id || '1',
-                      budgetArea: '',
-                      budgetQuantity: '',
-                      budgetCost: '',
-                      currentQuantity: '',
-                      currentCost: ''
-                    });
-                    setShowAddDetail(true);
-                  }}
-                  className="bg-blue-500 text-white text-sm px-3 py-1 rounded"
-                >
-                  新增明细
-                </button>
-                <label className="bg-green-500 text-white text-sm px-3 py-1 rounded cursor-pointer">
-                  导入
-                  <input type="file" accept=".xlsx,.xls,.csv" onChange={importCSV} className="hidden" />
-                </label>
-                <button
-                  onClick={downloadTemplate}
-                  className="bg-purple-500 text-white text-sm px-3 py-1 rounded"
-                >
-                  下载模板
-                </button>
-              </div>
-
-              <div className="bg-white p-3 rounded mb-4">
-                <h3 className="font-medium mb-2">分项统计</h3>
-                {Object.keys(categoryStats).length === 0 ? (
-                  <p className="text-gray-500 text-sm">暂无数据</p>
-                ) : (
-                  <div className="text-sm">
-                    {Object.entries(categoryStats).map(([name, stat]) => (
-                      <div key={name} className="py-1 border-b border-gray-100">
-                        <div className="flex justify-between">
-                          <span>{name}</span>
-                          <span>¥{stat.currentCost.toFixed(0)}/{stat.budgetCost.toFixed(0)}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          用量: {stat.currentQuantity.toFixed(1)}/{stat.budgetQuantity.toFixed(1)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {filteredDetails.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">暂无明细</p>
-              ) : (
-                filteredDetails.map(d => {
-                  const cat = categories.find(c => c.id === d.categoryId);
-                  return (
-                    <div key={d.id} className="bg-white p-3 mb-3 rounded shadow-sm">
-                      <h3 className="font-medium">{d.detailName}</h3>
-                      <p className="text-xs text-gray-600">分项: {cat?.name || '未知'}</p>
-                      <p className="text-sm mt-1">
-                        预算: ¥{d.budgetCost} | 使用: ¥{d.currentCost}
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => {
-                            setNewDetailData({ ...d, categoryId: d.categoryId.toString() });
-                            setShowAddDetail(true);
-                          }}
-                          className="text-blue-500 text-xs"
-                        >
-                          编辑
-                        </button>
-                        <button
-                          onClick={() => deleteDetail(d.id)}
-                          className="text-red-500 text-xs"
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {showAddProject && (
-            <ProjectForm
-              onClose={() => setShowAddProject(false)}
-              onSubmit={addProject}
-              projectStatuses={projectStatuses}
-            />
-          )}
-
-          {showEditProject && (
-            <ProjectForm
-              onClose={() => setShowEditProject(false)}
-              onSubmit={updateProject}
-              projectStatuses={projectStatuses}
-              initialData={editProjectData}
-            />
-          )}
-
-          {showAddDetail && (
-            <DetailForm
-              onClose={() => {
-                setShowAddDetail(false);
-                setNewDetailData({
-                  id: '',
-                  detailName: '',
-                  categoryId: '',
-                  budgetArea: '',
-                  budgetQuantity: '',
-                  budgetCost: '',
-                  currentQuantity: '',
-                  currentCost: ''
-                });
-              }}
-              onSubmit={newDetailData.id ? updateDetail : addDetail}
-              categories={categories}
-              initialData={newDetailData}
-            />
-          )}
-
-          {importModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white p-6 rounded-lg max-w-md w-full">
-                <h3 className="text-lg font-semibold mb-4">确认导入</h3>
-                <p>即将导入 {file.name}，确认继续？</p>
-                <div className="flex gap-2 mt-6">
-                  <button
-                    onClick={() => setImportModal(false)}
-                    className="flex-1 bg-gray-300 text-black py-2 rounded"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={confirmImport}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded"
-                  >
-                    确认导入
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {manageUsers && (
-            <UserManagement
-              onClose={() => setManageUsers(false)}
-              user={user}
-              ADMIN_EMAILS={ADMIN_EMAILS}
-            />
-          )}
-        </div>
-      );
-    }
-
-    function ProjectForm({ onClose, onSubmit, projectStatuses, initialData }) {
-      const isEdit = !!initialData;
-      const [formData, setFormData] = useState(
-        initialData || {
-          name: '',
-          status: '项目规划中',
-          budgetValue: ''
-        }
-      );
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        onSubmit(formData);
-        onClose();
-      };
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">{isEdit ? '编辑项目' : '新增项目'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">项目名称</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">项目状态</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full border rounded p-2"
-                >
-                  {projectStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">项目预算值(元)</label>
-                <input
-                  type="number"
-                  required
-                  value={formData.budgetValue}
-                  onChange={(e) => setFormData({ ...formData, budgetValue: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 bg-gray-300 text-black py-2 rounded"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-500 text-white py-2 rounded"
-                >
-                  {isEdit ? '保存' : '添加'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    function DetailForm({ onClose, onSubmit, categories, initialData }) {
-      const isEdit = !!initialData.id;
-      const [formData, setFormData] = useState(
-        initialData.id ? { ...initialData } : {
-          detailName: '',
-          categoryId: categories[0]?.id?.toString() || '',
-          budgetArea: '',
-          budgetQuantity: '',
-          budgetCost: '',
-          currentQuantity: '',
-          currentCost: ''
-        }
-      );
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        onSubmit(formData);
-        onClose();
-      };
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">{isEdit ? '编辑明细' : '新增明细'}</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">详细名称</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.detailName}
-                  onChange={(e) => setFormData({ ...formData, detailName: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">分项名称</label>
-                <select
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full border rounded p-2"
-                  required
-                >
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">预算面积(㎡)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.budgetArea}
-                  onChange={(e) => setFormData({ ...formData, budgetArea: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">预算用量</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.budgetQuantity}
-                  onChange={(e) => setFormData({ ...formData, budgetQuantity: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">预算费用(元)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.budgetCost}
-                  onChange={(e) => setFormData({ ...formData, budgetCost: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">当前使用量</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.currentQuantity}
-                  onChange={(e) => setFormData({ ...formData, currentQuantity: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">当前使用费用(元)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.currentCost}
-                  onChange={(e) => setFormData({ ...formData, currentCost: e.target.value })}
-                  className="w-full border rounded p-2"
-                />
-              </div>
-              <div className="flex gap-2 mt-6">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 bg-gray-300 text-black py-2 rounded"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-500 text-white py-2 rounded"
-                >
-                  {isEdit ? '保存' : '添加'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    function UserManagement({ onClose, user, ADMIN_EMAILS }) {
-      const [users, setUsers] = useState([]);
-      const [loading, setLoading] = useState(true);
-
-      useEffect(() => {
-        // 模拟从 Realtime Database 读取用户列表（实际需 Admin SDK）
-        db.ref('users').once('value').then(snapshot => {
-          const data = snapshot.val() || {};
-          const userList = Object.keys(data).map(key => ({
-            uid: key,
-            email: key, // 简化：uid = email
-            createdAt: data[key].createdAt
-          }));
-          setUsers(userList);
-          setLoading(false);
-        });
-      }, []);
-
-      const deleteUser = async (uid, email) => {
-        if (!window.confirm(`确认删除用户 ${email}？`)) return;
-        // 实际删除需 Admin SDK，此处仅提示
-        alert('请在 Firebase 控制台手动删除用户');
-      };
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">用户管理</h3>
-            {loading ? (
-              <p>加载中...</p>
-            ) : (
-              <div className="space-y-2">
-                {users.map(u => (
-                  <div key={u.uid} className="flex justify-between items-center p-2 border rounded">
-                    <div>
-                      <p className="font-medium">{u.email}</p>
-                      <p className="text-xs text-gray-500">{new Date(u.createdAt).toLocaleString()}</p>
-                    </div>
-                    {(ADMIN_EMAILS.includes(user.email) && user.email !== u.email) && (
-                      <button
-                        onClick={() => deleteUser(u.uid, u.email)}
-                        className="text-red-500 text-sm"
-                      >
-                        删除
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-gray-500 mt-4">
-              提示：删除用户需在 Firebase 控制台操作
-            </p>
-            <button
-              onClick={onClose}
-              className="mt-4 w-full bg-gray-300 text-black py-2 rounded"
-            >
-              关闭
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    const container = document.getElementById('root');
-    const root = ReactDOM.createRoot(container);
-    root.render(<App />);
-  </script>
-</body>
+      const container = document.getElementById('root');
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+    </script>
+  </body>
 </html>
-
-
