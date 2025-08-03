@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>青灡居成本与进展管理</title>
+  <!-- 添加空favicon避免404错误 -->
+  <link rel="icon" href="data:;base64,=">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://unpkg.com/papaparse@5.3.0/papaparse.min.js"></script>
-  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     /* 内联关键 CSS */
     body { 
@@ -84,9 +84,11 @@
 <body>
   <div id="root"></div>
   <script>
+    // 确保这是一个独立的代码块，没有多余字符
     (function() {
       'use strict';
       
+      // 获取React hooks
       var useState = React.useState;
       var useEffect = React.useEffect;
       var useRef = React.useRef;
@@ -120,40 +122,40 @@
       ];
 
       function App() {
-        var _useState = useState(null),
-            user = _useState[0],
-            setUser = _useState[1];
+        var _useState = useState(null);
+        var user = _useState[0];
+        var setUser = _useState[1];
+        
+        var _useState2 = useState(true);
+        var loading = _useState2[0];
+        var setLoading = _useState2[1];
 
-        var _useState2 = useState(true),
-            loading = _useState2[0],
-            setLoading = _useState2[1];
+        var _useState3 = useState('');
+        var email = _useState3[0];
+        var setEmail = _useState3[1];
+        
+        var _useState4 = useState('');
+        var password = _useState4[0];
+        var setPassword = _useState4[1];
+        
+        var _useState5 = useState(true);
+        var isLogin = _useState5[0];
+        var setIsLogin = _useState5[1];
+        
+        var _useState6 = useState('');
+        var error = _useState6[0];
+        var setError = _useState6[1];
+        
+        var _useState7 = useState(false);
+        var showReset = _useState7[0];
+        var setShowReset = _useState7[1];
 
-        var _useState3 = useState(''),
-            email = _useState3[0],
-            setEmail = _useState3[1];
-
-        var _useState4 = useState(''),
-            password = _useState4[0],
-            setPassword = _useState4[1];
-
-        var _useState5 = useState(true),
-            isLogin = _useState5[0],
-            setIsLogin = _useState5[1];
-
-        var _useState6 = useState(''),
-            error = _useState6[0],
-            setError = _useState6[1];
-
-        var _useState7 = useState(false),
-            showReset = _useState7[0],
-            setShowReset = _useState7[1];
-
-        useEffect(function () {
-          var unsubscribe = auth.onAuthStateChanged(function (user) {
+        useEffect(function() {
+          var unsubscribe = auth.onAuthStateChanged(function(user) {
             setUser(user);
             setLoading(false);
           });
-          return function () {
+          return function() {
             return unsubscribe();
           };
         }, []);
@@ -161,13 +163,11 @@
         var isManager = user && ADMIN_EMAILS.includes(user.email);
 
         if (loading) {
-          return /*#__PURE__*/React.createElement("div", {
-            className: "p-8 text-center"
-          }, "\u52A0\u8F7D\u4E2D...");
+          return React.createElement("div", { className: "p-8 text-center" }, "加载中...");
         }
 
         if (!user) {
-          return /*#__PURE__*/React.createElement(AuthPage, {
+          return React.createElement(AuthPage, {
             email: email,
             setEmail: setEmail,
             password: password,
@@ -181,206 +181,183 @@
           });
         }
 
-        return /*#__PURE__*/React.createElement(MainApp, {
+        return React.createElement(MainApp, {
           user: user,
           isManager: isManager,
-          onLogout: function onLogout() {
+          onLogout: function() {
             return auth.signOut();
           },
           ADMIN_EMAILS: ADMIN_EMAILS
         });
       }
 
-      function AuthPage(_ref) {
-        var email = _ref.email,
-            setEmail = _ref.setEmail,
-            password = _ref.password,
-            setPassword = _ref.setPassword,
-            isLogin = _ref.isLogin,
-            setIsLogin = _ref.setIsLogin,
-            error = _ref.error,
-            setError = _ref.setError,
-            showReset = _ref.showReset,
-            setShowReset = _ref.setShowReset;
+      function AuthPage(props) {
+        var email = props.email;
+        var setEmail = props.setEmail;
+        var password = props.password;
+        var setPassword = props.setPassword;
+        var isLogin = props.isLogin;
+        var setIsLogin = props.setIsLogin;
+        var error = props.error;
+        var setError = props.setError;
+        var showReset = props.showReset;
+        var setShowReset = props.setShowReset;
 
-        var handleSubmit = function handleSubmit(e) {
+        var handleSubmit = function(e) {
           e.preventDefault();
           setError('');
-          var _temp;
-
+          var temp;
+          
           try {
             if (showReset) {
-              _temp = auth.sendPasswordResetEmail(email).then(function () {
-                alert('\u91CD\u7F6E\u5BC6\u7801\u94FE\u63A5\u5DF2\u53D1\u9001\u81F3\u90AE\u7BB1');
+              temp = auth.sendPasswordResetEmail(email).then(function() {
+                alert('重置密码链接已发送至邮箱');
                 setShowReset(false);
               });
             } else if (isLogin) {
-              _temp = auth.signInWithEmailAndPassword(email, password);
+              temp = auth.signInWithEmailAndPassword(email, password);
             } else {
-              _temp = auth.createUserWithEmailAndPassword(email, password).then( /*#__PURE__*/function () {
-                var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-                  var userId, userRef, snapshot;
-                  return regeneratorRuntime.wrap(function _callee$(_context) {
-                    while (1) {
-                      switch (_context.prev = _context.next) {
-                        case 0:
-                          userId = auth.currentUser.uid;
-                          userRef = db.ref("users/".concat(userId));
-                          _context.next = 4;
-                          return userRef.once('value');
-
-                        case 4:
-                          snapshot = _context.sent;
-                          _context.next = 7;
-                          return userRef.set({
-                            categories: defaultCategories.map(function (name, index) {
-                              return {
-                                id: (index + 1).toString(),
-                                name: name,
-                                isDefault: true
-                              };
-                            }),
-                            createdAt: new Date().toISOString()
-                          });
-
-                        case 7:
-                        case "end":
-                          return _context.stop();
-                      }
-                    }
-                  }, _callee);
-                }));
-
-                return function () {
-                  return _ref2.apply(this, arguments);
-                };
-              }());
+              temp = auth.createUserWithEmailAndPassword(email, password).then(function() {
+                var userId = auth.currentUser.uid;
+                var userRef = db.ref("users/" + userId);
+                userRef.once('value').then(function(snapshot) {
+                  if (!snapshot.val()) {
+                    userRef.set({
+                      categories: defaultCategories.map(function(name, index) {
+                        return {
+                          id: (index + 1).toString(),
+                          name: name,
+                          isDefault: true
+                        };
+                      }),
+                      createdAt: new Date().toISOString()
+                    });
+                  }
+                });
+              });
             }
-
-            return _temp;
+            return temp;
           } catch (err) {
             setError(err.message);
           }
         };
 
-        return /*#__PURE__*/React.createElement("div", {
-          className: "min-h-screen flex items-center justify-center bg-blue-50 p-4"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "bg-white p-8 rounded-lg shadow-md w-full max-w-md"
-        }, /*#__PURE__*/React.createElement("h2", {
-          className: "text-2xl font-bold text-center mb-6 text-blue-600"
-        }, showReset ? '\u91CD\u7F6E\u5BC6\u7801' : isLogin ? '\u767B\u5F55' : '\u6CE8\u518C'), /*#__PURE__*/React.createElement("form", {
-          onSubmit: handleSubmit
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u90AE\u7BB1"), /*#__PURE__*/React.createElement("input", {
-          type: "email",
-          required: true,
-          value: email,
-          onChange: function onChange(e) {
-            return setEmail(e.target.value);
-          },
-          className: "w-full border rounded p-2",
-          placeholder: "your@company.com"
-        })), !showReset && /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u5BC6\u7801"), /*#__PURE__*/React.createElement("input", {
-          type: "password",
-          required: true,
-          value: password,
-          onChange: function onChange(e) {
-            return setPassword(e.target.value);
-          },
-          className: "w-full border rounded p-2",
-          minLength: "6"
-        })), error && /*#__PURE__*/React.createElement("p", {
-          className: "text-red-500 text-sm mb-4"
-        }, error), /*#__PURE__*/React.createElement("div", {
-          className: "space-y-3"
-        }, /*#__PURE__*/React.createElement("button", {
-          type: "submit",
-          className: "w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-        }, showReset ? '\u53D1\u9001\u91CD\u7F6E\u94FE\u63A5' : isLogin ? '\u767B\u5F55' : '\u6CE8\u518C'), /*#__PURE__*/React.createElement("div", {
-          className: "flex gap-2"
-        }, /*#__PURE__*/React.createElement("button", {
-          type: "button",
-          onClick: function onClick() {
-            return setIsLogin(!isLogin);
-          },
-          className: "flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
-        }, isLogin ? '\u53BB\u6CE8\u518C' : '\u53BB\u767B\u5F55'), /*#__PURE__*/React.createElement("button", {
-          type: "button",
-          onClick: function onClick() {
-            return setShowReset(!showReset);
-          },
-          className: "flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
-        }, showReset ? '\u8FD4\u56DE\u767B\u5F55' : '\u5FD8\u8BB0\u5BC6\u7801\uFF1F')))), /*#__PURE__*/React.createElement("div", {
-          className: "mt-6 text-center text-sm text-gray-500"
-        }, /*#__PURE__*/React.createElement("p", null, "\u793A\u4F8B\u8D26\u53F7\uFF1A"), /*#__PURE__*/React.createElement("p", null, "\u7BA1\u7406\u5458: ", /*#__PURE__*/React.createElement("code", null, "admin@qinglanju.com")), /*#__PURE__*/React.createElement("p", null, "\u666E\u901A\u7528\u6237: ", /*#__PURE__*/React.createElement("code", null, "user@qinglanju.com")), /*#__PURE__*/React.createElement("p", null, "\u5BC6\u7801: ", /*#__PURE__*/React.createElement("code", null, "123456")))));
+        return React.createElement("div", { className: "min-h-screen flex items-center justify-center bg-blue-50 p-4" },
+          React.createElement("div", { className: "bg-white p-8 rounded-lg shadow-md w-full max-w-md" },
+            React.createElement("h2", { className: "text-2xl font-bold text-center mb-6 text-blue-600" }, 
+              showReset ? "重置密码" : isLogin ? "登录" : "注册"
+            ),
+            React.createElement("form", { onSubmit: handleSubmit },
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "邮箱"),
+                React.createElement("input", {
+                  type: "email",
+                  required: true,
+                  value: email,
+                  onChange: function(e) { setEmail(e.target.value); },
+                  className: "w-full border rounded p-2",
+                  placeholder: "your@company.com"
+                })
+              ),
+              !showReset && React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "密码"),
+                React.createElement("input", {
+                  type: "password",
+                  required: true,
+                  value: password,
+                  onChange: function(e) { setPassword(e.target.value); },
+                  className: "w-full border rounded p-2",
+                  minLength: "6"
+                })
+              ),
+              error && React.createElement("p", { className: "text-red-500 text-sm mb-4" }, error),
+              React.createElement("div", { className: "space-y-3" },
+                React.createElement("button", {
+                  type: "submit",
+                  className: "w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                }, showReset ? "发送重置链接" : isLogin ? "登录" : "注册"),
+                React.createElement("div", { className: "flex gap-2" },
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setIsLogin(!isLogin); },
+                    className: "flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
+                  }, isLogin ? "去注册" : "去登录"),
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setShowReset(!showReset); },
+                    className: "flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm"
+                  }, showReset ? "返回登录" : "忘记密码？")
+                )
+              )
+            ),
+            React.createElement("div", { className: "mt-6 text-center text-sm text-gray-500" },
+              React.createElement("p", null, "示例账号："),
+              React.createElement("p", null, "管理员: ", React.createElement("code", null, "admin@qinglanju.com")),
+              React.createElement("p", null, "普通用户: ", React.createElement("code", null, "user@qinglanju.com")),
+              React.createElement("p", null, "密码: ", React.createElement("code", null, "123456"))
+            )
+          )
+        );
       }
 
-      function MainApp(_ref3) {
-        var user = _ref3.user,
-            isManager = _ref3.isManager,
-            onLogout = _ref3.onLogout,
-            ADMIN_EMAILS = _ref3.ADMIN_EMAILS;
+      function MainApp(props) {
+        var user = props.user;
+        var isManager = props.isManager;
+        var onLogout = props.onLogout;
+        var ADMIN_EMAILS = props.ADMIN_EMAILS;
 
-        var _useState8 = useState([]),
-            projects = _useState8[0],
-            setProjects = _useState8[1];
-
-        var _useState9 = useState([]),
-            details = _useState9[0],
-            setDetails = _useState9[1];
-
-        var _useState10 = useState([]),
-            categories = _useState10[0],
-            setCategories = _useState10[1];
-
-        var _useState11 = useState('projects'),
-            currentView = _useState11[0],
-            setCurrentView = _useState11[1];
-
-        var _useState12 = useState(null),
-            currentProjectId = _useState12[0],
-            setCurrentProjectId = _useState12[1];
-
-        var _useState13 = useState(null),
-            currentDetailId = _useState13[0],
-            setCurrentDetailId = _useState13[1];
-
-        var _useState14 = useState(''),
-            filterStatus = _useState14[0],
-            setFilterStatus = _useState14[1];
-
-        var _useState15 = useState(''),
-            detailFilterCategory = _useState15[0],
-            setDetailFilterCategory = _useState15[1];
-
-        var _useState16 = useState(false),
-            showAddProject = _useState16[0],
-            setShowAddProject = _useState16[1];
-
-        var _useState17 = useState(false),
-            showEditProject = _useState17[0],
-            setShowEditProject = _useState17[1];
-
-        var _useState18 = useState(false),
-            showAddDetail = _useState18[0],
-            setShowAddDetail = _useState18[1];
-
-        var _useState19 = useState(false),
-            showEditDetail = _useState19[0],
-            setShowEditDetail = _useState19[1];
-
-        var _useState20 = useState({}),
-            editProjectData = _useState20[0],
-            setEditProjectData = _useState20[1];
-
+        var _useState8 = useState([]);
+        var projects = _useState8[0];
+        var setProjects = _useState8[1];
+        
+        var _useState9 = useState([]);
+        var details = _useState9[0];
+        var setDetails = _useState9[1];
+        
+        var _useState10 = useState([]);
+        var categories = _useState10[0];
+        var setCategories = _useState10[1];
+        
+        var _useState11 = useState('projects');
+        var currentView = _useState11[0];
+        var setCurrentView = _useState11[1];
+        
+        var _useState12 = useState(null);
+        var currentProjectId = _useState12[0];
+        var setCurrentProjectId = _useState12[1];
+        
+        var _useState13 = useState(null);
+        var currentDetailId = _useState13[0];
+        var setCurrentDetailId = _useState13[1];
+        
+        var _useState14 = useState('全部');
+        var filterStatus = _useState14[0];
+        var setFilterStatus = _useState14[1];
+        
+        var _useState15 = useState('全部');
+        var detailFilterCategory = _useState15[0];
+        var setDetailFilterCategory = _useState15[1];
+        
+        var _useState16 = useState(false);
+        var showAddProject = _useState16[0];
+        var setShowAddProject = _useState16[1];
+        
+        var _useState17 = useState(false);
+        var showEditProject = _useState17[0];
+        var setShowEditProject = _useState17[1];
+        
+        var _useState18 = useState(false);
+        var showAddDetail = _useState18[0];
+        var setShowAddDetail = _useState18[1];
+        
+        var _useState19 = useState(false);
+        var showEditDetail = _useState19[0];
+        var setShowEditDetail = _useState19[1];
+        
+        var _useState20 = useState({});
+        var editProjectData = _useState20[0];
+        var setEditProjectData = _useState20[1];
+        
         var _useState21 = useState({
           id: '',
           detailName: '',
@@ -390,102 +367,84 @@
           budgetCost: '',
           currentQuantity: '',
           currentCost: ''
-        }),
-            newDetailData = _useState21[0],
-            setNewDetailData = _useState21[1];
-
-        var _useState22 = useState({}),
-            editDetailData = _useState22[0],
-            setEditDetailData = _useState22[1];
-
-        var _useState23 = useState(false),
-            importModal = _useState23[0],
-            setImportModal = _useState23[1];
-
-        var _useState24 = useState(false),
-            progressModal = _useState24[0],
-            setProgressModal = _useState24[1];
-
-        var _useState25 = useState(false),
-            budgetModal = _useState25[0],
-            setBudgetModal = _useState25[1];
-
-        var _useState26 = useState(false),
-            manageUsers = _useState26[0],
-            setManageUsers = _useState26[1];
-
-        var _useState27 = useState(null),
-            file = _useState27[0],
-            setFile = _useState27[1];
-
+        });
+        var newDetailData = _useState21[0];
+        var setNewDetailData = _useState21[1];
+        
+        var _useState22 = useState({});
+        var editDetailData = _useState22[0];
+        var setEditDetailData = _useState22[1];
+        
+        var _useState23 = useState(false);
+        var importModal = _useState23[0];
+        var setImportModal = _useState23[1];
+        
+        var _useState24 = useState(false);
+        var progressModal = _useState24[0];
+        var setProgressModal = _useState24[1];
+        
+        var _useState25 = useState(false);
+        var budgetModal = _useState25[0];
+        var setBudgetModal = _useState25[1];
+        
+        var _useState26 = useState(false);
+        var manageUsers = _useState26[0];
+        var setManageUsers = _useState26[1];
+        
+        var _useState27 = useState(null);
+        var file = _useState27[0];
+        var setFile = _useState27[1];
+        
         var fileInputRef = useRef(null);
         var progressFileInputRef = useRef(null);
-        var projectStatuses = ['\u9879\u76EE\u89C4\u5212\u4E2D', '\u9879\u76EE\u5DF2\u542F\u52A8', '\u6846\u67B6\u5EFA\u8BBE\u4E2D', '\u6846\u67B6\u5DF2\u5B8C\u6210', '\u9879\u76EE\u88C5\u4FEE\u4E2D', '\u9879\u76EE\u5DF2\u5B8C\u6210'];
+        
+        var projectStatuses = [
+          '项目规划中', '项目已启动', '框架建设中', '框架已完成', '项目装修中', '项目已完成'
+        ];
 
-        useEffect(function () {
+        useEffect(function() {
           loadUserData();
         }, [user]);
 
-        var loadUserData = function loadUserData() {
+        var loadUserData = function() {
           var userId = user.uid;
-          var userRef = db.ref("users/".concat(userId));
-          userRef.once('value').then( /*#__PURE__*/function () {
-            var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(snapshot) {
-              var userData;
-              return regeneratorRuntime.wrap(function _callee2$(_context2) {
-                while (1) {
-                  switch (_context2.prev = _context2.next) {
-                    case 0:
-                      userData = snapshot.val() || {
-                        categories: defaultCategories.map(function (name, index) {
-                          return {
-                            id: (index + 1).toString(),
-                            name: name,
-                            isDefault: true
-                          };
-                        })
-                      };
-                      setCategories(userData.categories || []);
-
-                      (isManager ? db.ref('projects') : db.ref('projects').orderByChild('userId').equalTo(userId)).on('value', function (snapshot) {
-                        var data = snapshot.val() || {};
-                        var projectList = Object.keys(data).map(function (key) {
-                          return _objectSpread({
-                            id: key
-                          }, data[key]);
-                        });
-                        setProjects(projectList);
-                      });
-
-                      db.ref('details').on('value', function (snapshot) {
-                        var data = snapshot.val() || {};
-                        var detailList = Object.keys(data).map(function (key) {
-                          return _objectSpread({
-                            id: key
-                          }, data[key]);
-                        });
-                        setDetails(detailList);
-                      });
-
-                    case 4:
-                    case "end":
-                      return _context2.stop();
-                  }
-                }
-              }, _callee2);
-            }));
-
-            return function (_x) {
-              return _ref4.apply(this, arguments);
+          var userRef = db.ref("users/" + userId);
+          userRef.once('value').then(function(snapshot) {
+            var userData = snapshot.val() || {
+              categories: defaultCategories.map(function(name, index) {
+                return {
+                  id: (index + 1).toString(),
+                  name: name,
+                  isDefault: true
+                };
+              })
             };
-          }());
+            setCategories(userData.categories || []);
+            
+            (isManager ? db.ref('projects') : db.ref('projects').orderByChild('userId').equalTo(userId))
+              .on('value', function(snapshot) {
+                var data = snapshot.val() || {};
+                var projectList = Object.keys(data).map(function(key) {
+                  return { id: key, ...data[key] };
+                });
+                setProjects(projectList);
+              });
+              
+            db.ref('details').on('value', function(snapshot) {
+              var data = snapshot.val() || {};
+              var detailList = Object.keys(data).map(function(key) {
+                return { id: key, ...data[key] };
+              });
+              setDetails(detailList);
+            });
+          });
         };
 
-        var saveData = function saveData(path, data) {
+        var saveData = function(path, data) {
           return db.ref(path).set(data);
         };
 
-        var addProject = function addProject(project) {
+        var addProject = function(project) {
           var newProject = {
             name: project.name,
             status: project.status,
@@ -496,69 +455,61 @@
             createdAt: new Date().toISOString()
           };
           var ref = db.ref('projects').push();
-          ref.set(newProject).then(function () {
-            var projectWithId = _objectSpread({
-              id: ref.key
-            }, newProject);
-
-            setProjects(function (prev) {
-              return [].concat(_toConsumableArray(prev), [projectWithId]);
+          ref.set(newProject).then(function() {
+            var projectWithId = { id: ref.key, ...newProject };
+            setProjects(function(prev) {
+              return [...prev, projectWithId];
             });
           });
         };
 
-        var updateProject = function updateProject(updatedProject) {
-          var _updatedProject$id = updatedProject.id,
-              id = _updatedProject$id === void 0 ? '' : _updatedProject$id,
-              data = _objectWithoutProperties(updatedProject, ["id"]);
-
-          db.ref("projects/".concat(id)).set(data).then(function () {
-            setProjects(function (prev) {
-              return prev.map(function (p) {
-                return p.id === id ? _objectSpread({
-                  id: id
-                }, data) : p;
+        var updateProject = function(updatedProject) {
+          var id = updatedProject.id || '';
+          var data = { ...updatedProject };
+          delete data.id;
+          
+          db.ref("projects/" + id).set(data).then(function() {
+            setProjects(function(prev) {
+              return prev.map(function(p) {
+                return p.id === id ? { id: id, ...data } : p;
               });
             });
-            var projectDetails = details.filter(function (d) {
+            
+            var projectDetails = details.filter(function(d) {
               return d.projectId === id;
             });
-            var totalUsed = projectDetails.reduce(function (sum, d) {
+            var totalUsed = projectDetails.reduce(function(sum, d) {
               return sum + (parseFloat(d.currentCost) || 0);
             }, 0);
             var progress = data.budgetValue > 0 ? totalUsed / data.budgetValue * 100 : 0;
-            var finalData = _objectSpread(_objectSpread({}, data), {}, {
-              budgetUsed: totalUsed,
-              progressPercent: progress
-            });
-            db.ref("projects/".concat(id)).set(finalData).then(function () {
-              setProjects(function (prev) {
-                return prev.map(function (p) {
-                  return p.id === id ? _objectSpread({
-                    id: id
-                  }, finalData) : p;
+            var finalData = { ...data, budgetUsed: totalUsed, progressPercent: progress };
+            
+            db.ref("projects/" + id).set(finalData).then(function() {
+              setProjects(function(prev) {
+                return prev.map(function(p) {
+                  return p.id === id ? { id: id, ...finalData } : p;
                 });
               });
             });
           });
         };
 
-        var deleteProject = function deleteProject(id) {
-          if (!window.confirm('\u786E\u8BA4\u8981\u5220\u9664\u9879\u76EE\u5417\uFF1F\u8BE5\u64CD\u4F5C\u5C06\u540C\u65F6\u5220\u9664\u5176\u6240\u6709\u660E\u7EC6\u8BB0\u5F55\uFF0C\u4E14\u65E0\u6CD5\u6062\u590D\u3002')) return;
-          db.ref("projects/".concat(id)).remove().then(function () {
-            db.ref('details').orderByChild('projectId').equalTo(id).once('value', function (snapshot) {
+        var deleteProject = function(id) {
+          if (!window.confirm('确认要删除项目吗？该操作将同时删除其所有明细记录，且无法恢复。')) return;
+          db.ref("projects/" + id).remove().then(function() {
+            db.ref('details').orderByChild('projectId').equalTo(id).once('value', function(snapshot) {
               var updates = {};
-              snapshot.forEach(function (child) {
+              snapshot.forEach(function(child) {
                 updates[child.key] = null;
               });
-              db.ref('details').update(updates).then(function () {
-                setProjects(function (prev) {
-                  return prev.filter(function (p) {
+              db.ref('details').update(updates).then(function() {
+                setProjects(function(prev) {
+                  return prev.filter(function(p) {
                     return p.id !== id;
                   });
                 });
-                setDetails(function (prev) {
-                  return prev.filter(function (d) {
+                setDetails(function(prev) {
+                  return prev.filter(function(d) {
                     return d.projectId !== id;
                   });
                 });
@@ -567,7 +518,7 @@
           });
         };
 
-        var addDetail = function addDetail(detail) {
+        var addDetail = function(detail) {
           var newDetail = {
             projectId: currentProjectId,
             detailName: detail.detailName,
@@ -582,657 +533,432 @@
             budgetItems: []
           };
           var ref = db.ref('details').push();
-          ref.set(newDetail).then(function () {
-            var detailWithId = _objectSpread({
-              id: ref.key
-            }, newDetail);
-
-            setDetails(function (prev) {
-              return [].concat(_toConsumableArray(prev), [detailWithId]);
+          ref.set(newDetail).then(function() {
+            var detailWithId = { id: ref.key, ...newDetail };
+            setDetails(function(prev) {
+              return [...prev, detailWithId];
             });
-            var project = projects.find(function (p) {
+            
+            var project = projects.find(function(p) {
               return p.id === currentProjectId;
             });
-
+            
             if (project) {
-              var totalUsed = [].concat(_toConsumableArray(details), [detailWithId]).filter(function (d) {
+              var totalUsed = [...details, detailWithId].filter(function(d) {
                 return d.projectId === currentProjectId;
-              }).reduce(function (sum, d) {
+              }).reduce(function(sum, d) {
                 return sum + d.currentCost;
               }, 0);
               var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
-              var updatedProject = _objectSpread(_objectSpread({}, project), {}, {
-                budgetUsed: totalUsed,
-                progressPercent: progress
-              });
+              var updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
               updateProject(updatedProject);
             }
           });
         };
 
-        var updateDetail = function updateDetail(updatedDetail) {
-          var _updatedDetail$id = updatedDetail.id,
-              id = _updatedDetail$id === void 0 ? '' : _updatedDetail$id,
-              data = _objectWithoutProperties(updatedDetail, ["id"]);
-
-          db.ref("details/".concat(id)).update(data).then(function () {
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === id ? _objectSpread(_objectSpread({}, d), {}, _objectSpread({}, data)) : d;
+        var updateDetail = function(updatedDetail) {
+          var id = updatedDetail.id || '';
+          var data = { ...updatedDetail };
+          delete data.id;
+          
+          db.ref("details/" + id).update(data).then(function() {
+            setDetails(function(prev) {
+              return prev.map(function(d) {
+                return d.id === id ? { ...d, ...data } : d;
               });
             });
-            var project = projects.find(function (p) {
+            
+            var project = projects.find(function(p) {
               return p.id === updatedDetail.projectId;
             });
-
+            
             if (project) {
-              var totalUsed = details.filter(function (d) {
+              var totalUsed = details.filter(function(d) {
                 return d.projectId === updatedDetail.projectId;
-              }).reduce(function (sum, d) {
+              }).reduce(function(sum, d) {
                 return sum + d.currentCost;
               }, 0);
               var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
-              var updatedProject = _objectSpread(_objectSpread({}, project), {}, {
-                budgetUsed: totalUsed,
-                progressPercent: progress
-              });
+              var updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
               updateProject(updatedProject);
             }
           });
         };
 
-        var deleteDetail = function deleteDetail(id) {
-          if (!window.confirm('\u786E\u8BA4\u5220\u9664\u6B64\u660E\u7EC6\uFF1F')) return;
-          var detail = details.find(function (d) {
+        var deleteDetail = function(id) {
+          if (!window.confirm('确认删除此明细？')) return;
+          var detail = details.find(function(d) {
             return d.id === id;
           });
-          db.ref("details/".concat(id)).remove().then(function () {
-            setDetails(function (prev) {
-              return prev.filter(function (d) {
+          db.ref("details/" + id).remove().then(function() {
+            setDetails(function(prev) {
+              return prev.filter(function(d) {
                 return d.id !== id;
               });
             });
-            var project = projects.find(function (p) {
+            
+            var project = projects.find(function(p) {
               return p.id === detail.projectId;
             });
-
+            
             if (project) {
-              var totalUsed = details.filter(function (d) {
+              var totalUsed = details.filter(function(d) {
                 return d.projectId === detail.projectId && d.id !== id;
-              }).reduce(function (sum, d) {
+              }).reduce(function(sum, d) {
                 return sum + d.currentCost;
               }, 0);
               var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
-              var updatedProject = _objectSpread(_objectSpread({}, project), {}, {
-                budgetUsed: totalUsed,
-                progressPercent: progress
-              });
+              var updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
               updateProject(updatedProject);
             }
           });
         };
 
-        var addProgressItem = function addProgressItem(detailId, item) {
-          var ref = db.ref("details/".concat(detailId, "/progressItems")).push();
-          ref.set(_objectSpread(_objectSpread({}, item), {}, {
-            createdAt: new Date().toISOString()
-          })).then(function () {
-            var newItem = _objectSpread({
-              id: ref.key
-            }, item);
-
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                  progressItems: [].concat(_toConsumableArray(d.progressItems || []), [newItem])
-                }) : d;
+        var addProgressItem = function(detailId, item) {
+          var ref = db.ref("details/" + detailId + "/progressItems").push();
+          ref.set({ ...item, createdAt: new Date().toISOString() }).then(function() {
+            var newItem = { id: ref.key, ...item };
+            setDetails(function(prev) {
+              return prev.map(function(d) {
+                return d.id === detailId ? { 
+                  ...d, 
+                  progressItems: [...(d.progressItems || []), newItem] 
+                } : d;
               });
             });
             recalculateDetailProgress(detailId);
           });
         };
 
-        var updateProgressItem = function updateProgressItem(detailId, itemId, updates) {
-          db.ref("details/".concat(detailId, "/progressItems/").concat(itemId)).update(updates).then(function () {
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                  progressItems: d.progressItems.map(function (i) {
-                    return i.id === itemId ? _objectSpread(_objectSpread({}, i), updates) : i;
+        var updateProgressItem = function(detailId, itemId, updates) {
+          db.ref("details/" + detailId + "/progressItems/" + itemId).update(updates).then(function() {
+            setDetails(function(prev) {
+              return prev.map(function(d) {
+                return d.id === detailId ? { 
+                  ...d, 
+                  progressItems: d.progressItems.map(function(i) {
+                    return i.id === itemId ? { ...i, ...updates } : i;
                   })
-                }) : d;
+                } : d;
               });
             });
             recalculateDetailProgress(detailId);
           });
         };
 
-        var deleteProgressItem = function deleteProgressItem(detailId, itemId) {
-          db.ref("details/".concat(detailId, "/progressItems/").concat(itemId)).remove().then(function () {
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                  progressItems: d.progressItems.filter(function (i) {
+        var deleteProgressItem = function(detailId, itemId) {
+          db.ref("details/" + detailId + "/progressItems/" + itemId).remove().then(function() {
+            setDetails(function(prev) {
+              return prev.map(function(d) {
+                return d.id === detailId ? { 
+                  ...d, 
+                  progressItems: d.progressItems.filter(function(i) {
                     return i.id !== itemId;
                   })
-                }) : d;
+                } : d;
               });
             });
             recalculateDetailProgress(detailId);
           });
         };
 
-        var recalculateDetailProgress = function recalculateDetailProgress(detailId) {
-          var detail = details.find(function (d) {
+        var recalculateDetailProgress = function(detailId) {
+          var detail = details.find(function(d) {
             return d.id === detailId;
           });
-
+          
           if (!detail || !detail.progressItems || !detail.progressItems.length) {
             return;
           }
-
-          var avgProgress = detail.progressItems.reduce(function (sum, i) {
+          
+          var avgProgress = detail.progressItems.reduce(function(sum, i) {
             return sum + (parseFloat(i.progress) || 0);
           }, 0) / detail.progressItems.length;
-          var updatedDetail = _objectSpread(_objectSpread({}, detail), {}, {
-            progressPercent: avgProgress
-          });
+          var updatedDetail = { ...detail, progressPercent: avgProgress };
           updateDetail(updatedDetail);
         };
 
-        var importProgressCSV = function importProgressCSV(event) {
-          var file = event.target.files[0];
-          if (!file) return;
-          setFile(file);
-          setProgressModal(true);
-        };
-
-        var confirmProgressImport = function confirmProgressImport() {
-          Papaparse.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function complete(result) {
-              var items = result.data.map(function (row) {
-                return {
-                  name: row.条目名称,
-                  progress: parseFloat(row.进展) || 0
-                };
-              }).filter(function (i) {
-                return i.name;
-              });
-              var detailId = currentDetailId;
-              var batch = {};
-              items.forEach(function (item) {
-                var ref = db.ref("details/".concat(detailId, "/progressItems")).push();
-                batch[ref.key] = item;
-              });
-              db.ref("details/".concat(detailId, "/progressItems")).update(batch).then(function () {
-                setDetails(function (prev) {
-                  return prev.map(function (d) {
-                    return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                      progressItems: [].concat(_toConsumableArray(d.progressItems || []), _toConsumableArray(Object.values(batch).map(function (i, idx) {
-                        return _objectSpread({
-                          id: Object.keys(batch)[idx]
-                        }, i);
-                      })))
-                    }) : d;
-                  });
-                });
-                recalculateDetailProgress(detailId);
-                setProgressModal(false);
-                setFile(null);
-                alert('\u5DE5\u7A0B\u8FDB\u5EA6\u5BFC\u5165\u6210\u529F\uFF01');
-              });
-            },
-            error: function error() {
-              alert('\u6587\u4EF6\u89E3\u6790\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u683C\u5F0F\u662F\u5426\u6B63\u786E\u3002');
-            }
+        var filteredProjects = filterStatus === '全部' ? 
+          projects : 
+          projects.filter(function(p) {
+            return p.status === filterStatus;
           });
-        };
-
-        var downloadProgressTemplate = function downloadProgressTemplate() {
-          var templateData = [{
-            条目名称: '\u5899\u89D2',
-            进展: 80
-          }, {
-            条目名称: '\u5899\u4F53',
-            进展: 60
-          }, {
-            条目名称: '\u5899\u74E6',
-            进展: 30
-          }, {
-            条目名称: '\u5899\u5E8A',
-            进展: 100
-          }];
-          var ws = XLSX.utils.json_to_sheet(templateData);
-          var wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, '\u5DE5\u7A0B\u8FDB\u5EA6\u5BFC\u5165');
-          XLSX.writeFile(wb, '\u9752\u71C9\u5C45-\u5DE5\u7A0B\u8FDB\u5EA6\u5BFC\u5165\u6A21\u677F.xlsx');
-        };
-
-        var addBudgetItem = function addBudgetItem(detailId, item) {
-          var ref = db.ref("details/".concat(detailId, "/budgetItems")).push();
-          ref.set(_objectSpread(_objectSpread({}, item), {}, {
-            createdAt: new Date().toISOString()
-          })).then(function () {
-            var newItem = _objectSpread(_objectSpread({}, item), {}, {
-              id: ref.key
-            });
-
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                  budgetItems: [].concat(_toConsumableArray(d.budgetItems || []), [newItem])
-                }) : d;
-              });
-            });
-            recalculateDetailBudget(detailId);
-          });
-        };
-
-        var deleteBudgetItem = function deleteBudgetItem(detailId, itemId) {
-          db.ref("details/".concat(detailId, "/budgetItems/").concat(itemId)).remove().then(function () {
-            setDetails(function (prev) {
-              return prev.map(function (d) {
-                return d.id === detailId ? _objectSpread(_objectSpread({}, d), {}, {
-                  budgetItems: d.budgetItems.filter(function (i) {
-                    return i.id !== itemId;
-                  })
-                }) : d;
-              });
-            });
-            recalculateDetailBudget(detailId);
-          });
-        };
-
-        var recalculateDetailBudget = function recalculateDetailBudget(detailId) {
-          var detail = details.find(function (d) {
-            return d.id === detailId;
-          });
-
-          if (!detail || !detail.budgetItems || !detail.budgetItems.length) {
-            return;
-          }
-
-          var totalCost = detail.budgetItems.reduce(function (sum, i) {
-            return sum + (parseFloat(i.amount) || 0);
-          }, 0);
-          var updatedDetail = _objectSpread(_objectSpread({}, detail), {}, {
-            currentCost: totalCost
-          });
-          updateDetail(updatedDetail);
-        };
-
-        var importCSV = function importCSV(event) {
-          var file = event.target.files[0];
-          if (!file) return;
-          setFile(file);
-          setImportModal(true);
-        };
-
-        var confirmImport = function confirmImport() {
-          var reader = new FileReader();
-          reader.onload = function (e) {
-            var data = new Uint8Array(e.target.result);
-            var workbook = XLSX.read(data, {
-              type: 'array'
-            });
-            var sheet = workbook.Sheets[workbook.SheetNames[0]];
-            var json = XLSX.utils.sheet_to_json(sheet);
-            var newDetails = json.map(function (row) {
-              var cat = categories.find(function (c) {
-                return c.name === row.分项名称;
-              });
-              return {
-                projectId: currentProjectId,
-                detailName: row.详细名称 || '\u672A\u547D\u540D',
-                categoryId: cat ? cat.id : categories[0] ? categories[0].id || '1' : '1',
-                budgetArea: parseFloat(row.预算面积) || null,
-                budgetQuantity: parseFloat(row.预算用量) || 0,
-                budgetCost: parseFloat(row.预算费用) || 0,
-                currentQuantity: parseFloat(row.当前使用量) || 0,
-                currentCost: parseFloat(row.当前使用费用) || 0,
-                createdAt: new Date().toISOString(),
-                progressItems: [],
-                budgetItems: []
-              };
-            }).filter(function (d) {
-              return d.detailName !== '\u672A\u547D\u540D';
-            });
-            var batch = {};
-            newDetails.forEach(function (detail) {
-              var ref = db.ref('details').push();
-              batch[ref.key] = detail;
-            });
-            db.ref('details').update(batch).then(function () {
-              setDetails(function (prev) {
-                return [].concat(_toConsumableArray(prev), _toConsumableArray(Object.values(batch).map(function (d, i) {
-                  return _objectSpread({
-                    id: Object.keys(batch)[i]
-                  }, d);
-                })));
-              });
-              var project = projects.find(function (p) {
-                return p.id === currentProjectId;
-              });
-
-              if (project) {
-                var totalUsed = [].concat(_toConsumableArray(details), _toConsumableArray(Object.values(batch))).filter(function (d) {
-                  return d.projectId === currentProjectId;
-                }).reduce(function (sum, d) {
-                  return sum + d.currentCost;
-                }, 0);
-                var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
-                var updatedProject = _objectSpread(_objectSpread({}, project), {}, {
-                  budgetUsed: totalUsed,
-                  progressPercent: progress
-                });
-                updateProject(updatedProject);
-              }
-
-              setImportModal(false);
-              setFile(null);
-              alert('\u5BFC\u5165\u6210\u529F\uFF01');
-            });
-          };
-
-          reader.readAsArrayBuffer(file);
-        };
-
-        var downloadTemplate = function downloadTemplate() {
-          var templateData = [{
-            详细名称: '\u5317\u4FA7\u9662\u5899\u780C\u7B11',
-            分项名称: '院墙',
-            预算面积: 50,
-            预算用量: 100,
-            预算费用: 8000,
-            当前使用量: 95,
-            当前使用费用: 7600
-          }, {
-            详细名称: '\u7535\u6E90\u5E03\u7EBF\u5B89\u88C5',
-            分项名称: '电源系统',
-            预算面积: '',
-            预算用量: 200,
-            预算费用: 15000,
-            当前使用量: 190,
-            当前使用费用: 14500
-          }];
-          var ws = XLSX.utils.json_to_sheet(templateData);
-          var wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, '\u660E\u7EC6\u5BFC\u5165');
-          XLSX.writeFile(wb, '\u9752\u71C9\u5C45-\u660E\u7EC6\u5BFC\u5165\u6A21\u677F.xlsx');
-        };
-
-        var filteredProjects = filterStatus === '\u5168\u90E8' ? projects : projects.filter(function (p) {
-          return p.status === filterStatus;
-        });
-        var currentProject = projects.find(function (p) {
+          
+        var currentProject = projects.find(function(p) {
           return p.id === currentProjectId;
         });
-        var projectDetails = details.filter(function (d) {
+        
+        var projectDetails = details.filter(function(d) {
           return d.projectId === currentProjectId;
         });
-        var filteredDetails = detailFilterCategory === '\u5168\u90E8' ? projectDetails : projectDetails.filter(function (d) {
-          var cat = categories.find(function (c) {
-            return c.id === d.categoryId;
+        
+        var filteredDetails = detailFilterCategory === '全部' ? 
+          projectDetails : 
+          projectDetails.filter(function(d) {
+            var cat = categories.find(function(c) {
+              return c.id === d.categoryId;
+            });
+            return cat ? cat.name === detailFilterCategory : false;
           });
-          return cat ? cat.name === detailFilterCategory : false;
-        });
+          
         var categoryStats = {};
-        filteredDetails.forEach(function (d) {
-          var cat = categories.find(function (c) {
+        filteredDetails.forEach(function(d) {
+          var cat = categories.find(function(c) {
             return c.id === d.categoryId;
           });
-          var name = cat ? cat.name : '\u672A\u77E5';
-
+          var name = cat ? cat.name : '未知';
+          
           if (!categoryStats[name]) {
-            categoryStats[name] = {
-              budgetCost: 0,
+            categoryStats[name] = { 
+              budgetCost: 0, 
               currentCost: 0,
               budgetQuantity: 0,
               currentQuantity: 0
             };
           }
-
+          
           categoryStats[name].budgetCost += d.budgetCost;
           categoryStats[name].currentCost += d.currentCost;
           categoryStats[name].budgetQuantity += d.budgetQuantity;
           categoryStats[name].currentQuantity += d.currentQuantity;
         });
 
-        var ProgressModal = function ProgressModal(_ref6) {
-          var detailId = _ref6.detailId,
-              onClose = _ref6.onClose;
-
-          var _useState28 = useState({
-            name: '',
-            progress: ''
-          }),
-              newItem = _useState28[0],
-              setNewItem = _useState28[1];
-
-          var detail = details.find(function (d) {
+        var ProgressModal = function(props) {
+          var detailId = props.detailId;
+          var onClose = props.onClose;
+          
+          var _useState28 = useState({ name: '', progress: '' });
+          var newItem = _useState28[0];
+          var setNewItem = _useState28[1];
+          
+          var detail = details.find(function(d) {
             return d.id === detailId;
           });
           var progressItems = detail ? detail.progressItems || [] : [];
 
-          var handleAdd = function handleAdd() {
+          var handleAdd = function() {
             if (newItem.name && newItem.progress) {
               addProgressItem(detailId, newItem);
-              setNewItem({
-                name: '',
-                progress: ''
-              });
+              setNewItem({ name: '', progress: '' });
             }
           };
-
-          var handleUpdate = function handleUpdate(itemId, field, value) {
-            updateProgressItem(detailId, itemId, _defineProperty({}, field, value));
+          
+          var handleUpdate = function(itemId, field, value) {
+            var updates = {};
+            updates[field] = value;
+            updateProgressItem(detailId, itemId, updates);
           };
-
-          var handleDelete = function handleDelete(itemId) {
+          
+          var handleDelete = function(itemId) {
             deleteProgressItem(detailId, itemId);
           };
 
-          return /*#__PURE__*/React.createElement("div", {
-            className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex justify-between items-center mb-4"
-          }, /*#__PURE__*/React.createElement("h3", {
-            className: "text-lg font-semibold"
-          }, "\u5DE5\u7A0B\u8FDB\u5EA6\u7BA1\u7406"), /*#__PURE__*/React.createElement("label", {
-            className: "bg-green-500 text-white text-sm px-3 py-1 rounded cursor-pointer"
-          }, "\u5BFC\u5165", /*#__PURE__*/React.createElement("input", {
-            type: "file",
-            accept: ".csv,.xlsx",
-            onChange: importProgressCSV,
-            className: "hidden"
-          }))), /*#__PURE__*/React.createElement("div", {
-            className: "mb-4"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex gap-2"
-          }, /*#__PURE__*/React.createElement("input", {
-            type: "text",
-            value: newItem.name,
-            onChange: function onChange(e) {
-              return setNewItem(_objectSpread(_objectSpread({}, newItem), {}, {
-                name: e.target.value
-              }));
-            },
-            placeholder: "\u6761\u76EE\u540D\u79F0\uFF08\u5982\u5899\u89D2\uFF09",
-            className: "flex-1 border rounded p-2"
-          }), /*#__PURE__*/React.createElement("input", {
-            type: "number",
-            value: newItem.progress,
-            onChange: function onChange(e) {
-              return setNewItem(_objectSpread(_objectSpread({}, newItem), {}, {
-                progress: e.target.value
-              }));
-            },
-            placeholder: "\u8FDB\u5EA6\uFF08%)\uFF0C",
-            className: "w-24 border rounded p-2"
-          }), /*#__PURE__*/React.createElement("button", {
-            onClick: handleAdd,
-            className: "bg-blue-500 text-white px-3 py-1 rounded"
-          }, "\u6DFB\u52A0"))), /*#__PURE__*/React.createElement("div", {
-            className: "space-y-2"
-          }, progressItems.map(function (item) {
-            return /*#__PURE__*/React.createElement("div", {
-              key: item.id,
-              className: "flex items-center gap-2 p-2 border rounded"
-            }, /*#__PURE__*/React.createElement("input", {
-              type: "text",
-              value: item.name,
-              onChange: function onChange(e) {
-                return handleUpdate(item.id, 'name', e.target.value);
-              },
-              className: "flex-1 border rounded p-2"
-            }), /*#__PURE__*/React.createElement("input", {
-              type: "number",
-              value: item.progress,
-              onChange: function onChange(e) {
-                return handleUpdate(item.id, 'progress', e.target.value);
-              },
-              className: "w-24 border rounded p-2"
-            }), /*#__PURE__*/React.createElement("button", {
-              onClick: function onClick() {
-                return handleDelete(item.id);
-              },
-              className: "text-red-500"
-            }, "\u5220\u9664"));
-          })), /*#__PURE__*/React.createElement("div", {
-            className: "mt-4 text-sm text-gray-500"
-          }, /*#__PURE__*/React.createElement("p", null, "\u63D0\u793A\uFF1A"), /*#__PURE__*/React.createElement("p", null, "1. \u5DE5\u7A0B\u8FDB\u5EA6 = \u6240\u6709\u6761\u76EE\u8FDB\u5EA6\u7684\u5E73\u5747\u503C"), /*#__PURE__*/React.createElement("p", null, "2. \u652F\u6301\u5BFC\u5165\u6A21\u677F\uFF08\u4E0B\u8F7D\u6A21\u677F \u2192 \u586B\u5199 \u2192 \u5BFC\u5165\uFF09"), /*#__PURE__*/React.createElement("button", {
-            onClick: downloadProgressTemplate,
-            className: "mt-2 text-blue-500 underline"
-          }, "\u4E0B\u8F7D\u5DE5\u7A0B\u8FDB\u5EA6\u5BFC\u5165\u6A21\u677F")), /*#__PURE__*/React.createElement("button", {
-            onClick: onClose,
-            className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
-          }, "\u5173\u95ED")));
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+            React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" },
+              React.createElement("div", { className: "flex justify-between items-center mb-4" },
+                React.createElement("h3", { className: "text-lg font-semibold" }, "工程进度管理"),
+                React.createElement("label", { className: "bg-green-500 text-white text-sm px-3 py-1 rounded cursor-pointer" },
+                  "导入",
+                  React.createElement("input", {
+                    type: "file",
+                    accept: ".csv,.xlsx",
+                    onChange: function(e) {
+                      var file = e.target.files[0];
+                      if (file) {
+                        setFile(file);
+                        setProgressModal(true);
+                      }
+                    },
+                    className: "hidden"
+                  })
+                )
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("div", { className: "flex gap-2" },
+                  React.createElement("input", {
+                    type: "text",
+                    value: newItem.name,
+                    onChange: function(e) {
+                      setNewItem({ ...newItem, name: e.target.value });
+                    },
+                    placeholder: "条目名称（如墙角）",
+                    className: "flex-1 border rounded p-2"
+                  }),
+                  React.createElement("input", {
+                    type: "number",
+                    value: newItem.progress,
+                    onChange: function(e) {
+                      setNewItem({ ...newItem, progress: e.target.value });
+                    },
+                    placeholder: "进度（%）",
+                    className: "w-24 border rounded p-2"
+                  }),
+                  React.createElement("button", {
+                    onClick: handleAdd,
+                    className: "bg-blue-500 text-white px-3 py-1 rounded"
+                  }, "添加")
+                )
+              ),
+              React.createElement("div", { className: "space-y-2" },
+                progressItems.map(function(item) {
+                  return React.createElement("div", { key: item.id, className: "flex items-center gap-2 p-2 border rounded" },
+                    React.createElement("input", {
+                      type: "text",
+                      value: item.name,
+                      onChange: function(e) {
+                        handleUpdate(item.id, 'name', e.target.value);
+                      },
+                      className: "flex-1 border rounded p-2"
+                    }),
+                    React.createElement("input", {
+                      type: "number",
+                      value: item.progress,
+                      onChange: function(e) {
+                        handleUpdate(item.id, 'progress', e.target.value);
+                      },
+                      className: "w-24 border rounded p-2"
+                    }),
+                    React.createElement("button", {
+                      onClick: function() { handleDelete(item.id); },
+                      className: "text-red-500"
+                    }, "删除")
+                  );
+                })
+              ),
+              React.createElement("div", { className: "mt-4 text-sm text-gray-500" },
+                React.createElement("p", null, "提示："),
+                React.createElement("p", null, "1. 工程进度 = 所有条目进度的平均值"),
+                React.createElement("p", null, "2. 支持导入模板（下载模板 → 填写 → 导入）"),
+                React.createElement("button", {
+                  onClick: function() {
+                    var templateData = [
+                      { 条目名称: '墙角', 进展: 80 },
+                      { 条目名称: '墙体', 进展: 60 },
+                      { 条目名称: '墙瓦', 进展: 30 },
+                      { 条目名称: '墙床', 进展: 100 }
+                    ];
+                    var ws = XLSX.utils.json_to_sheet(templateData);
+                    var wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, '工程进度导入');
+                    XLSX.writeFile(wb, '青灡居-工程进度导入模板.xlsx');
+                  },
+                  className: "mt-2 text-blue-500 underline"
+                }, "下载工程进度导入模板")
+              ),
+              React.createElement("button", {
+                onClick: onClose,
+                className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
+              }, "关闭")
+            )
+          );
         };
 
-        var BudgetModal = function BudgetModal(_ref7) {
-          var detailId = _ref7.detailId,
-              onClose = _ref7.onClose;
-
-          var _useState29 = useState({
-            name: '',
-            amount: '',
-            description: ''
-          }),
-              newItem = _useState29[0],
-              setNewItem = _useState29[1];
-
-          var detail = details.find(function (d) {
+        var BudgetModal = function(props) {
+          var detailId = props.detailId;
+          var onClose = props.onClose;
+          
+          var _useState29 = useState({ name: '', amount: '', description: '' });
+          var newItem = _useState29[0];
+          var setNewItem = _useState29[1];
+          
+          var detail = details.find(function(d) {
             return d.id === detailId;
           });
           var budgetItems = detail ? detail.budgetItems || [] : [];
 
-          var handleAdd = function handleAdd() {
+          var handleAdd = function() {
             if (newItem.name && newItem.amount) {
               addBudgetItem(detailId, newItem);
-              setNewItem({
-                name: '',
-                amount: '',
-                description: ''
-              });
+              setNewItem({ name: '', amount: '', description: '' });
             }
           };
-
-          var handleDelete = function handleDelete(itemId) {
+          
+          var handleDelete = function(itemId) {
             deleteBudgetItem(detailId, itemId);
           };
 
-          return /*#__PURE__*/React.createElement("div", {
-            className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-          }, /*#__PURE__*/React.createElement("h3", {
-            className: "text-lg font-semibold mb-4"
-          }, "\u9884\u7B97\u4F7F\u7528\u7533\u8BF7"), /*#__PURE__*/React.createElement("div", {
-            className: "mb-4"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "grid grid-cols-1 md:grid-cols-3 gap-2"
-          }, /*#__PURE__*/React.createElement("input", {
-            type: "text",
-            value: newItem.name,
-            onChange: function onChange(e) {
-              return setNewItem(_objectSpread(_objectSpread({}, newItem), {}, {
-                name: e.target.value
-              }));
-            },
-            placeholder: "\u6761\u76EE\u540D\u79F0\uFF08\u5982\u6750\u6599\u8D39\uFF09",
-            className: "col-span-1 border rounded p-2"
-          }), /*#__PURE__*/React.createElement("input", {
-            type: "number",
-            value: newItem.amount,
-            onChange: function onChange(e) {
-              return setNewItem(_objectSpread(_objectSpread({}, newItem), {}, {
-                amount: e.target.value
-              }));
-            },
-            placeholder: "\u91D1\u989D\uFF08\u5143\uFF09",
-            className: "col-span-1 border rounded p-2"
-          }), /*#__PURE__*/React.createElement("input", {
-            type: "text",
-            value: newItem.description,
-            onChange: function onChange(e) {
-              return setNewItem(_objectSpread(_objectSpread({}, newItem), {}, {
-                description: e.target.value
-              }));
-            },
-            placeholder: "\u8BF4\u660E",
-            className: "col-span-1 border rounded p-2"
-          })), /*#__PURE__*/React.createElement("button", {
-            onClick: handleAdd,
-            className: "mt-2 bg-blue-500 text-white px-4 py-1 rounded"
-          }, "\u6DFB\u52A0")), /*#__PURE__*/React.createElement("div", {
-            className: "space-y-3"
-          }, budgetItems.map(function (item) {
-            return /*#__PURE__*/React.createElement("div", {
-              key: item.id,
-              className: "flex flex-col md:flex-row md:items-center gap-2 p-3 border rounded"
-            }, /*#__PURE__*/React.createElement("div", {
-              className: "flex-1"
-            }, /*#__PURE__*/React.createElement("p", {
-              className: "font-medium"
-            }, item.name), /*#__PURE__*/React.createElement("p", {
-              className: "text-gray-600"
-            }, item.description), /*#__PURE__*/React.createElement("p", {
-              className: "text-blue-600 font-semibold"
-            }, "\uFFE5", (parseFloat(item.amount) || 0).toFixed(2))), /*#__PURE__*/React.createElement("button", {
-              onClick: function onClick() {
-                return handleDelete(item.id);
-              },
-              className: "text-red-500 mt-2 md:mt-0"
-            }, "\u5220\u9664"));
-          })), /*#__PURE__*/React.createElement("div", {
-            className: "mt-4 text-sm text-gray-500"
-          }, /*#__PURE__*/React.createElement("p", null, "\u63D0\u793A\uFF1A"), /*#__PURE__*/React.createElement("p", null, "1. \u9884\u7B97\u4F7F\u7528 = \u6240\u6709\u6761\u76EE\u91D1\u989D\u603B\u548C")), /*#__PURE__*/React.createElement("button", {
-            onClick: onClose,
-            className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
-          }, "\u5173\u95ED")));
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+            React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto" },
+              React.createElement("h3", { className: "text-lg font-semibold mb-4" }, "预算使用申请"),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-2" },
+                  React.createElement("input", {
+                    type: "text",
+                    value: newItem.name,
+                    onChange: function(e) {
+                      setNewItem({ ...newItem, name: e.target.value });
+                    },
+                    placeholder: "条目名称（如材料费）",
+                    className: "col-span-1 border rounded p-2"
+                  }),
+                  React.createElement("input", {
+                    type: "number",
+                    value: newItem.amount,
+                    onChange: function(e) {
+                      setNewItem({ ...newItem, amount: e.target.value });
+                    },
+                    placeholder: "金额（元）",
+                    className: "col-span-1 border rounded p-2"
+                  }),
+                  React.createElement("input", {
+                    type: "text",
+                    value: newItem.description,
+                    onChange: function(e) {
+                      setNewItem({ ...newItem, description: e.target.value });
+                    },
+                    placeholder: "说明",
+                    className: "col-span-1 border rounded p-2"
+                  })
+                ),
+                React.createElement("button", {
+                  onClick: handleAdd,
+                  className: "mt-2 bg-blue-500 text-white px-4 py-1 rounded"
+                }, "添加")
+              ),
+              React.createElement("div", { className: "space-y-3" },
+                budgetItems.map(function(item) {
+                  return React.createElement("div", { key: item.id, className: "flex flex-col md:flex-row md:items-center gap-2 p-3 border rounded" },
+                    React.createElement("div", { className: "flex-1" },
+                      React.createElement("p", { className: "font-medium" }, item.name),
+                      React.createElement("p", { className: "text-gray-600" }, item.description),
+                      React.createElement("p", { className: "text-blue-600 font-semibold" }, "¥", parseFloat(item.amount).toFixed(2))
+                    ),
+                    React.createElement("button", {
+                      onClick: function() { handleDelete(item.id); },
+                      className: "text-red-500 mt-2 md:mt-0"
+                    }, "删除")
+                  );
+                })
+              ),
+              React.createElement("div", { className: "mt-4 text-sm text-gray-500" },
+                React.createElement("p", null, "提示："),
+                React.createElement("p", null, "1. 预算使用 = 所有条目金额总和")
+              ),
+              React.createElement("button", {
+                onClick: onClose,
+                className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
+              }, "关闭")
+            )
+          );
         };
 
-        var UserManagement = function UserManagement(_ref8) {
-          var onClose = _ref8.onClose,
-              user = _ref8.user,
-              ADMIN_EMAILS = _ref8.ADMIN_EMAILS;
+        var UserManagement = function(props) {
+          var onClose = props.onClose;
+          var user = props.user;
+          var ADMIN_EMAILS = props.ADMIN_EMAILS;
+          
+          var _useState30 = useState([]);
+          var users = _useState30[0];
+          var setUsers = _useState30[1];
+          
+          var _useState31 = useState(true);
+          var loading = _useState31[0];
+          var setLoading = _useState31[1];
 
-          var _useState30 = useState([]),
-              users = _useState30[0],
-              setUsers = _useState30[1];
-
-          var _useState31 = useState(true),
-              loading = _useState31[0],
-              setLoading = _useState31[1];
-
-          useEffect(function () {
-            db.ref('users').once('value').then(function (snapshot) {
+          useEffect(function() {
+            db.ref('users').once('value').then(function(snapshot) {
               var data = snapshot.val() || {};
-              var userList = Object.keys(data).map(function (key) {
+              var userList = Object.keys(data).map(function(key) {
                 return {
                   uid: key,
                   email: key,
@@ -1244,417 +970,504 @@
             });
           }, []);
 
-          var deleteUser = function deleteUser(uid, email) {
-            if (!window.confirm("\u786E\u8BA4\u5220\u9664\u7528\u6237 ".concat(email, "\uFF1F"))) return;
-            alert('\u8BF7\u5728 Firebase \u63A7\u5236\u53F0\u624B\u52A8\u5220\u9664\u7528\u6237');
+          var deleteUser = function(uid, email) {
+            if (!window.confirm("确认删除用户 " + email + "？")) return;
+            alert('请在 Firebase 控制台手动删除用户');
           };
 
-          return /*#__PURE__*/React.createElement("div", {
-            className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "bg-white p-6 rounded-lg max-w-md w-full max-h-96 overflow-y-auto"
-          }, /*#__PURE__*/React.createElement("h3", {
-            className: "text-lg font-semibold mb-4"
-          }, "\u7528\u6237\u7BA1\u7406"), loading ? /*#__PURE__*/React.createElement("p", null, "\u52A0\u8F7D\u4E2D...") : /*#__PURE__*/React.createElement("div", {
-            className: "space-y-2"
-          }, users.map(function (u) {
-            return /*#__PURE__*/React.createElement("div", {
-              key: u.uid,
-              className: "flex justify-between items-center p-2 border rounded"
-            }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-              className: "font-medium"
-            }, u.email), /*#__PURE__*/React.createElement("p", {
-              className: "text-xs text-gray-500"
-            }, new Date(u.createdAt).toLocaleString())), ADMIN_EMAILS.includes(user.email) && user.email !== u.email && /*#__PURE__*/React.createElement("button", {
-              onClick: function onClick() {
-                return deleteUser(u.uid, u.email);
-              },
-              className: "text-red-500 text-sm"
-            }, "\u5220\u9664"));
-          })), /*#__PURE__*/React.createElement("p", {
-            className: "text-xs text-gray-500 mt-4"
-          }, "\u63D0\u793A\uFF1A\u5220\u9664\u7528\u6237\u9700\u5728 Firebase \u63A7\u5236\u53F0\u64CD\u4F5C"), /*#__PURE__*/React.createElement("button", {
-            onClick: onClose,
-            className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
-          }, "\u5173\u95ED")));
+          return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+            React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-md w-full max-h-96 overflow-y-auto" },
+              React.createElement("h3", { className: "text-lg font-semibold mb-4" }, "用户管理"),
+              loading ? 
+                React.createElement("p", null, "加载中...") :
+                React.createElement("div", { className: "space-y-2" },
+                  users.map(function(u) {
+                    return React.createElement("div", { key: u.uid, className: "flex justify-between items-center p-2 border rounded" },
+                      React.createElement("div", null,
+                        React.createElement("p", { className: "font-medium" }, u.email),
+                        React.createElement("p", { className: "text-xs text-gray-500" }, new Date(u.createdAt).toLocaleString())
+                      ),
+                      ADMIN_EMAILS.includes(user.email) && user.email !== u.email &&
+                        React.createElement("button", {
+                          onClick: function() { deleteUser(u.uid, u.email); },
+                          className: "text-red-500 text-sm"
+                        }, "删除")
+                    );
+                  })
+                ),
+              React.createElement("p", { className: "text-xs text-gray-500 mt-4" },
+                "提示：删除用户需在 Firebase 控制台操作"
+              ),
+              React.createElement("button", {
+                onClick: onClose,
+                className: "mt-4 w-full bg-gray-300 text-black py-2 rounded"
+              }, "关闭")
+            )
+          );
         };
 
-        return /*#__PURE__*/React.createElement("div", {
-          className: "min-h-screen"
-        }, /*#__PURE__*/React.createElement("header", {
-          className: "bg-white shadow-sm p-4 flex items-center justify-between"
-        }, /*#__PURE__*/React.createElement("h1", {
-          className: "text-xl font-bold text-blue-600"
-        }, "\u9752\u71C9\u5C45"), /*#__PURE__*/React.createElement("div", {
-          className: "flex items-center gap-2"
-        }, /*#__PURE__*/React.createElement("span", {
-          className: "text-sm text-gray-600"
-        }, isManager ? '\u7BA1\u7406\u5458' : '\u7528\u6237', ": ", user.email), /*#__PURE__*/React.createElement("button", {
-          onClick: function onClick() {
-            return setManageUsers(true);
-          },
-          className: "text-xs bg-gray-200 px-2 py-1 rounded"
-        }, "\u7528\u6237\u7BA1\u7406"), /*#__PURE__*/React.createElement("button", {
-          onClick: onLogout,
-          className: "text-red-500 text-sm"
-        }, "\u9000\u51FA"))), currentView === 'projects' && /*#__PURE__*/React.createElement("div", {
-          className: "p-4"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("select", {
-          value: filterStatus,
-          onChange: function onChange(e) {
-            return setFilterStatus(e.target.value);
-          },
-          className: "border rounded p-2"
-        }, /*#__PURE__*/React.createElement("option", {
-          value: "\u5168\u90E8"
-        }, "\u5168\u90E8"), projectStatuses.map(function (s) {
-          return /*#__PURE__*/React.createElement("option", {
-            key: s,
-            value: s
-          }, s);
-        }))), filteredProjects.length === 0 ? /*#__PURE__*/React.createElement("p", {
-          className: "text-gray-500 text-center py-8"
-        }, "\u6682\u65E0\u9879\u76EE") : filteredProjects.map(function (p) {
-          return /*#__PURE__*/React.createElement("div", {
-            key: p.id,
-            className: "bg-white p-4 mb-4 rounded-lg shadow"
-          }, /*#__PURE__*/React.createElement("h2", {
-            className: "font-semibold"
-          }, p.name), /*#__PURE__*/React.createElement("p", {
-            className: "text-sm text-gray-600"
-          }, p.status), /*#__PURE__*/React.createElement("p", {
-            className: "text-sm mt-1"
-          }, "\u9884\u7B97\uFF1A\uFFE5", p.budgetValue.toLocaleString(), " / \uFFE5", p.budgetUsed.toLocaleString()), /*#__PURE__*/React.createElement("div", {
-            className: "progress-bar mt-2"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "progress-fill",
-            style: {
-              width: "".concat(Math.min(p.progressPercent, 100), "%")
-            }
-          })), /*#__PURE__*/React.createElement("p", {
-            className: "text-xs text-gray-500 mt-1"
-          }, p.progressPercent.toFixed(1), "% \u8FDB\u5C55"), /*#__PURE__*/React.createElement("div", {
-            className: "flex gap-2 mt-3"
-          }, /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              setCurrentProjectId(p.id);
-              setCurrentView('details');
-            },
-            className: "bg-green-500 text-white text-xs px-3 py-1 rounded"
-          }, "\u660E\u7EC6"), /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              setEditProjectData(p);
-              setShowEditProject(true);
-            },
-            className: "bg-yellow-500 text-white text-xs px-3 py-1 rounded"
-          }, "\u7F16\u8F91"), /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              return deleteProject(p.id);
-            },
-            className: "bg-red-500 text-white text-xs px-3 py-1 rounded"
-          }, "\u5220\u9664")));
-        }), /*#__PURE__*/React.createElement("button", {
-          onClick: function onClick() {
-            return setShowAddProject(true);
-          },
-          className: "mt-4 bg-blue-500 text-white px-4 py-2 rounded-full text-sm shadow"
-        }, " + \u65B0\u589E\u9879\u76EE")), currentView === 'details' && currentProject && /*#__PURE__*/React.createElement("div", {
-          className: "p-4"
-        }, /*#__PURE__*/React.createElement("h2", {
-          className: "text-lg font-semibold mb-2"
-        }, currentProject.name, " - \u660E\u7EC6\u7BA1\u7406"), /*#__PURE__*/React.createElement("div", {
-          className: "flex flex-wrap gap-2 mb-4"
-        }, /*#__PURE__*/React.createElement("select", {
-          value: detailFilterCategory,
-          onChange: function onChange(e) {
-            return setDetailFilterCategory(e.target.value);
-          },
-          className: "border rounded p-2 text-sm"
-        }, /*#__PURE__*/React.createElement("option", {
-          value: "\u5168\u90E8"
-        }, "\u5168\u90E8\u5206\u9879"), categories.map(function (c) {
-          return /*#__PURE__*/React.createElement("option", {
-            key: c.id,
-            value: c.name
-          }, c.name);
-        })), /*#__PURE__*/React.createElement("button", {
-          onClick: function onClick() {
-            setNewDetailData({
-              id: '',
-              detailName: '',
-              categoryId: categories[0] ? categories[0].id || '1' : '1',
-              budgetArea: '',
-              budgetQuantity: '',
-              budgetCost: '',
-              currentQuantity: '',
-              currentCost: ''
-            });
-            setShowAddDetail(true);
-          },
-          className: "bg-blue-500 text-white text-sm px-3 py-1 rounded"
-        }, "\u65B0\u589E\u660E\u7EC6"), /*#__PURE__*/React.createElement("label", {
-          className: "bg-green-500 text-white text-sm px-3 py-1 rounded cursor-pointer"
-        }, "\u5BFC\u5165", /*#__PURE__*/React.createElement("input", {
-          type: "file",
-          accept: ".xlsx,.xls,.csv",
-          onChange: importCSV,
-          className: "hidden"
-        })), /*#__PURE__*/React.createElement("button", {
-          onClick: downloadTemplate,
-          className: "bg-purple-500 text-white text-sm px-3 py-1 rounded"
-        }, "\u4E0B\u8F7D\u6A21\u677F")), /*#__PURE__*/React.createElement("div", {
-          className: "bg-white p-3 rounded mb-4"
-        }, /*#__PURE__*/React.createElement("h3", {
-          className: "font-medium mb-2"
-        }, "\u5206\u9879\u7EDF\u8BA1"), Object.keys(categoryStats).length === 0 ? /*#__PURE__*/React.createElement("p", {
-          className: "text-gray-500 text-sm"
-        }, "\u6682\u65E0\u6570\u636E") : /*#__PURE__*/React.createElement("div", {
-          className: "text-sm"
-        }, Object.entries(categoryStats).map(function (_ref9) {
-          var name = _ref9[0],
-              stat = _ref9[1];
-          return /*#__PURE__*/React.createElement("div", {
-            key: name,
-            className: "py-1 border-b border-gray-100"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex justify-between"
-          }, /*#__PURE__*/React.createElement("span", null, name), /*#__PURE__*/React.createElement("span", null, "\uFFE5", stat.currentCost.toFixed(0), "/", stat.budgetCost.toFixed(0))), /*#__PURE__*/React.createElement("div", {
-            className: "text-xs text-gray-500"
-          }, "\u7528\u91CF: ", stat.currentQuantity.toFixed(1), "/", stat.budgetQuantity.toFixed(1)));
-        }))), filteredDetails.length === 0 ? /*#__PURE__*/React.createElement("p", {
-          className: "text-gray-500 text-center py-8"
-        }, "\u6682\u65E0\u660E\u7EC6") : filteredDetails.map(function (d) {
-          var cat = categories.find(function (c) {
-            return c.id === d.categoryId;
-          });
-          return /*#__PURE__*/React.createElement("div", {
-            key: d.id,
-            className: "bg-white p-3 mb-3 rounded shadow-sm"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "flex justify-between items-start"
-          }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-            className: "font-medium"
-          }, d.detailName), /*#__PURE__*/React.createElement("p", {
-            className: "text-xs text-gray-600"
-          }, "\u5206\u9879: ", cat ? cat.name || '\u672A\u77E5' : '\u672A\u77E5'), /*#__PURE__*/React.createElement("p", {
-            className: "text-sm mt-1"
-          }, "\u9884\u7B97: \uFFE5", d.budgetCost, " | \u4F7F\u7528: \uFFE5", d.currentCost), /*#__PURE__*/React.createElement("div", {
-            className: "progress-bar mt-2"
-          }, /*#__PURE__*/React.createElement("div", {
-            className: "progress-fill",
-            style: {
-              width: "".concat(Math.min(d.progressPercent || 0, 100), "%")
-            }
-          })), /*#__PURE__*/React.createElement("p", {
-            className: "text-xs text-gray-500 mt-1"
-          }, (d.progressPercent || 0).toFixed(1), "% \u8FDB\u5C55")), /*#__PURE__*/React.createElement("div", {
-            className: "flex gap-1"
-          }, /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              setCurrentDetailId(d.id);
-              setProgressModal(true);
-            },
-            className: "text-xs bg-blue-500 text-white px-2 py-1 rounded"
-          }, "\u8FDB\u5EA6"), /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              setCurrentDetailId(d.id);
-              setBudgetModal(true);
-            },
-            className: "text-xs bg-green-500 text-white px-2 py-1 rounded"
-          }, "\u9884\u7B97"), /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              setEditDetailData({
-                id: d.id,
-                detailName: d.detailName,
-                categoryId: d.categoryId,
-                budgetArea: d.budgetArea,
-                budgetQuantity: d.budgetQuantity,
-                budgetCost: d.budgetCost,
-                currentQuantity: d.currentQuantity,
-                currentCost: d.currentCost
+        return React.createElement("div", { className: "min-h-screen" },
+          React.createElement("header", { className: "bg-white shadow-sm p-4 flex items-center justify-between" },
+            React.createElement("h1", { className: "text-xl font-bold text-blue-600" }, "青灡居"),
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-sm text-gray-600" },
+                isManager ? "管理员" : "用户", ": ", user.email
+              ),
+              React.createElement("button", {
+                onClick: function() { setManageUsers(true); },
+                className: "text-xs bg-gray-200 px-2 py-1 rounded"
+              }, "用户管理"),
+              React.createElement("button", {
+                onClick: onLogout,
+                className: "text-red-500 text-sm"
+              }, "退出")
+            )
+          ),
+          
+          currentView === 'projects' && React.createElement("div", { className: "p-4" },
+            React.createElement("div", { className: "mb-4" },
+              React.createElement("select", {
+                value: filterStatus,
+                onChange: function(e) { setFilterStatus(e.target.value); },
+                className: "border rounded p-2"
+              },
+                React.createElement("option", { value: "全部" }, "全部"),
+                projectStatuses.map(function(s) {
+                  return React.createElement("option", { key: s, value: s }, s);
+                })
+              )
+            ),
+            filteredProjects.length === 0 ?
+              React.createElement("p", { className: "text-gray-500 text-center py-8" }, "暂无项目") :
+              filteredProjects.map(function(p) {
+                return React.createElement("div", { key: p.id, className: "bg-white p-4 mb-4 rounded-lg shadow" },
+                  React.createElement("h2", { className: "font-semibold" }, p.name),
+                  React.createElement("p", { className: "text-sm text-gray-600" }, p.status),
+                  React.createElement("p", { className: "text-sm mt-1" },
+                    "预算：¥", p.budgetValue.toLocaleString(), " / ¥", p.budgetUsed.toLocaleString()
+                  ),
+                  React.createElement("div", { className: "progress-bar mt-2" },
+                    React.createElement("div", {
+                      className: "progress-fill",
+                      style: { width: Math.min(p.progressPercent, 100) + "%" }
+                    })
+                  ),
+                  React.createElement("p", { className: "text-xs text-gray-500 mt-1" },
+                    p.progressPercent.toFixed(1), "% 进展"
+                  ),
+                  React.createElement("div", { className: "flex gap-2 mt-3" },
+                    React.createElement("button", {
+                      onClick: function() {
+                        setCurrentProjectId(p.id);
+                        setCurrentView('details');
+                      },
+                      className: "bg-green-500 text-white text-xs px-3 py-1 rounded"
+                    }, "明细"),
+                    React.createElement("button", {
+                      onClick: function() {
+                        setEditProjectData(p);
+                        setShowEditProject(true);
+                      },
+                      className: "bg-yellow-500 text-white text-xs px-3 py-1 rounded"
+                    }, "编辑"),
+                    React.createElement("button", {
+                      onClick: function() { deleteProject(p.id); },
+                      className: "bg-red-500 text-white text-xs px-3 py-1 rounded"
+                    }, "删除")
+                  )
+                );
+              }),
+            React.createElement("button", {
+              onClick: function() { setShowAddProject(true); },
+              className: "mt-4 bg-blue-500 text-white px-4 py-2 rounded-full text-sm shadow"
+            }, " + 新增项目")
+          ),
+          
+          currentView === 'details' && currentProject && React.createElement("div", { className: "p-4" },
+            React.createElement("h2", { className: "text-lg font-semibold mb-2" }, 
+              currentProject.name, " - 明细管理"
+            ),
+            React.createElement("div", { className: "flex flex-wrap gap-2 mb-4" },
+              React.createElement("select", {
+                value: detailFilterCategory,
+                onChange: function(e) { setDetailFilterCategory(e.target.value); },
+                className: "border rounded p-2 text-sm"
+              },
+                React.createElement("option", { value: "全部" }, "全部分项"),
+                categories.map(function(c) {
+                  return React.createElement("option", { key: c.id, value: c.name }, c.name);
+                })
+              ),
+              React.createElement("button", {
+                onClick: function() {
+                  setNewDetailData({
+                    id: '',
+                    detailName: '',
+                    categoryId: categories[0] ? categories[0].id || '1' : '1',
+                    budgetArea: '',
+                    budgetQuantity: '',
+                    budgetCost: '',
+                    currentQuantity: '',
+                    currentCost: ''
+                  });
+                  setShowAddDetail(true);
+                },
+                className: "bg-blue-500 text-white text-sm px-3 py-1 rounded"
+              }, "新增明细"),
+              React.createElement("label", {
+                className: "bg-green-500 text-white text-sm px-3 py-1 rounded cursor-pointer"
+              },
+                "导入",
+                React.createElement("input", {
+                  type: "file",
+                  accept: ".xlsx,.xls,.csv",
+                  onChange: function(e) {
+                    var file = e.target.files[0];
+                    if (file) {
+                      setFile(file);
+                      setImportModal(true);
+                    }
+                  },
+                  className: "hidden"
+                })
+              ),
+              React.createElement("button", {
+                onClick: function() {
+                  var templateData = [
+                    { 详细名称: '北侧院墙砌筑', 分项名称: '院墙', 预算面积: 50, 预算用量: 100, 预算费用: 8000, 当前使用量: 95, 当前使用费用: 7600 },
+                    { 详细名称: '电源布线安装', 分项名称: '电源系统', 预算面积: '', 预算用量: 200, 预算费用: 15000, 当前使用量: 190, 当前使用费用: 14500 }
+                  ];
+                  var ws = XLSX.utils.json_to_sheet(templateData);
+                  var wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, '明细导入');
+                  XLSX.writeFile(wb, '青灡居-明细导入模板.xlsx');
+                },
+                className: "bg-purple-500 text-white text-sm px-3 py-1 rounded"
+              }, "下载模板")
+            ),
+            React.createElement("div", { className: "bg-white p-3 rounded mb-4" },
+              React.createElement("h3", { className: "font-medium mb-2" }, "分项统计"),
+              Object.keys(categoryStats).length === 0 ?
+                React.createElement("p", { className: "text-gray-500 text-sm" }, "暂无数据") :
+                React.createElement("div", { className: "text-sm" },
+                  Object.entries(categoryStats).map(function(_ref) {
+                    var name = _ref[0];
+                    var stat = _ref[1];
+                    return React.createElement("div", { key: name, className: "py-1 border-b border-gray-100" },
+                      React.createElement("div", { className: "flex justify-between" },
+                        React.createElement("span", null, name),
+                        React.createElement("span", null, "¥", stat.currentCost.toFixed(0), "/", stat.budgetCost.toFixed(0))
+                      ),
+                      React.createElement("div", { className: "text-xs text-gray-500" },
+                        "用量: ", stat.currentQuantity.toFixed(1), "/", stat.budgetQuantity.toFixed(1)
+                      )
+                    );
+                  })
+                )
+            ),
+            filteredDetails.length === 0 ?
+              React.createElement("p", { className: "text-gray-500 text-center py-8" }, "暂无明细") :
+              filteredDetails.map(function(d) {
+                var cat = categories.find(function(c) {
+                  return c.id === d.categoryId;
+                });
+                return React.createElement("div", { key: d.id, className: "bg-white p-3 mb-3 rounded shadow-sm" },
+                  React.createElement("div", { className: "flex justify-between items-start" },
+                    React.createElement("div", null,
+                      React.createElement("h3", { className: "font-medium" }, d.detailName),
+                      React.createElement("p", { className: "text-xs text-gray-600" },
+                        "分项: ", cat ? cat.name || '未知' : '未知'
+                      ),
+                      React.createElement("p", { className: "text-sm mt-1" },
+                        "预算: ¥", d.budgetCost, " | 使用: ¥", d.currentCost
+                      ),
+                      React.createElement("div", { className: "progress-bar mt-2" },
+                        React.createElement("div", {
+                          className: "progress-fill",
+                          style: { width: Math.min(d.progressPercent || 0, 100) + "%" }
+                        })
+                      ),
+                      React.createElement("p", { className: "text-xs text-gray-500 mt-1" },
+                        (d.progressPercent || 0).toFixed(1), "% 进展"
+                      )
+                    ),
+                    React.createElement("div", { className: "flex gap-1" },
+                      React.createElement("button", {
+                        onClick: function() {
+                          setCurrentDetailId(d.id);
+                          setProgressModal(true);
+                        },
+                        className: "text-xs bg-blue-500 text-white px-2 py-1 rounded"
+                      }, "进度"),
+                      React.createElement("button", {
+                        onClick: function() {
+                          setCurrentDetailId(d.id);
+                          setBudgetModal(true);
+                        },
+                        className: "text-xs bg-green-500 text-white px-2 py-1 rounded"
+                      }, "预算"),
+                      React.createElement("button", {
+                        onClick: function() {
+                          setEditDetailData({
+                            id: d.id,
+                            detailName: d.detailName,
+                            categoryId: d.categoryId,
+                            budgetArea: d.budgetArea,
+                            budgetQuantity: d.budgetQuantity,
+                            budgetCost: d.budgetCost,
+                            currentQuantity: d.currentQuantity,
+                            currentCost: d.currentCost
+                          });
+                          setShowEditDetail(true);
+                        },
+                        className: "text-blue-500 text-xs"
+                      }, "编辑"),
+                      React.createElement("button", {
+                        onClick: function() { deleteDetail(d.id); },
+                        className: "text-red-500 text-xs"
+                      }, "删除")
+                    )
+                  )
+                );
+              })
+          ),
+          
+          showAddProject && React.createElement(ProjectForm, {
+            onClose: function() { setShowAddProject(false); },
+            onSubmit: addProject,
+            projectStatuses: projectStatuses
+          }),
+          
+          showEditProject && React.createElement(ProjectForm, {
+            onClose: function() { setShowEditProject(false); },
+            onSubmit: updateProject,
+            projectStatuses: projectStatuses,
+            initialData: editProjectData
+          }),
+          
+          showAddDetail && React.createElement(DetailForm, {
+            onClose: function() {
+              setShowAddDetail(false);
+              setNewDetailData({
+                id: '',
+                detailName: '',
+                categoryId: '',
+                budgetArea: '',
+                budgetQuantity: '',
+                budgetCost: '',
+                currentQuantity: '',
+                currentCost: ''
               });
-              setShowEditDetail(true);
             },
-            className: "text-blue-500 text-xs"
-          }, "\u7F16\u8F91"), /*#__PURE__*/React.createElement("button", {
-            onClick: function onClick() {
-              return deleteDetail(d.id);
+            onSubmit: newDetailData.id ? updateDetail : addDetail,
+            categories: categories,
+            initialData: newDetailData,
+            isEdit: false
+          }),
+          
+          showEditDetail && React.createElement(DetailForm, {
+            onClose: function() {
+              setShowEditDetail(false);
+              setEditDetailData({});
             },
-            className: "text-red-500 text-xs"
-          }, "\u5220\u9664"))));
-        })), showAddProject && /*#__PURE__*/React.createElement(ProjectForm, {
-          onClose: function onClose() {
-            return setShowAddProject(false);
-          },
-          onSubmit: addProject,
-          projectStatuses: projectStatuses
-        }), showEditProject && /*#__PURE__*/React.createElement(ProjectForm, {
-          onClose: function onClose() {
-            return setShowEditProject(false);
-          },
-          onSubmit: updateProject,
-          projectStatuses: projectStatuses,
-          initialData: editProjectData
-        }), showAddDetail && /*#__PURE__*/React.createElement(DetailForm, {
-          onClose: function onClose() {
-            setShowAddDetail(false);
-            setNewDetailData({
-              id: '',
-              detailName: '',
-              categoryId: '',
-              budgetArea: '',
-              budgetQuantity: '',
-              budgetCost: '',
-              currentQuantity: '',
-              currentCost: ''
-            });
-          },
-          onSubmit: newDetailData.id ? updateDetail : addDetail,
-          categories: categories,
-          initialData: newDetailData,
-          isEdit: false
-        }), showEditDetail && /*#__PURE__*/React.createElement(DetailForm, {
-          onClose: function onClose() {
-            setShowEditDetail(false);
-            setEditDetailData({});
-          },
-          onSubmit: updateDetail,
-          categories: categories,
-          initialData: editDetailData,
-          isEdit: true
-        }), importModal && /*#__PURE__*/React.createElement("div", {
-          className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "bg-white p-6 rounded-lg max-w-md w-full"
-        }, /*#__PURE__*/React.createElement("h3", {
-          className: "text-lg font-semibold mb-4"
-        }, "\u786E\u8BA4\u5BFC\u5165"), /*#__PURE__*/React.createElement("p", null, "\u5373\u5C06\u5BFC\u5165 ", file ? file.name : '', "\uFF0C\u786E\u8BA4\u7EE7\u7EED\uFF1F"), /*#__PURE__*/React.createElement("div", {
-          className: "flex gap-2 mt-6"
-        }, /*#__PURE__*/React.createElement("button", {
-          onClick: function onClick() {
-            return setImportModal(false);
-          },
-          className: "flex-1 bg-gray-300 text-black py-2 rounded"
-        }, "\u53D6\u6D88"), /*#__PURE__*/React.createElement("button", {
-          onClick: confirmImport,
-          className: "flex-1 bg-blue-500 text-white py-2 rounded"
-        }, "\u786E\u8BA4\u5BFC\u5165")))), progressModal && currentDetailId && /*#__PURE__*/React.createElement(ProgressModal, {
-          detailId: currentDetailId,
-          onClose: function onClose() {
-            setProgressModal(false);
-            setCurrentDetailId(null);
-          }
-        }), budgetModal && currentDetailId && /*#__PURE__*/React.createElement(BudgetModal, {
-          detailId: currentDetailId,
-          onClose: function onClose() {
-            setBudgetModal(false);
-            setCurrentDetailId(null);
-          }
-        }), manageUsers && /*#__PURE__*/React.createElement(UserManagement, {
-          onClose: function onClose() {
-            return setManageUsers(false);
-          },
-          user: user,
-          ADMIN_EMAILS: ADMIN_EMAILS
-        }));
+            onSubmit: updateDetail,
+            categories: categories,
+            initialData: editDetailData,
+            isEdit: true
+          }),
+          
+          importModal && React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+            React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-md w-full" },
+              React.createElement("h3", { className: "text-lg font-semibold mb-4" }, "确认导入"),
+              React.createElement("p", null, "即将导入 ", file ? file.name : "", "，确认继续？"),
+              React.createElement("div", { className: "flex gap-2 mt-6" },
+                React.createElement("button", {
+                  onClick: function() { setImportModal(false); },
+                  className: "flex-1 bg-gray-300 text-black py-2 rounded"
+                }, "取消"),
+                React.createElement("button", {
+                  onClick: function() {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                      var data = new Uint8Array(e.target.result);
+                      var workbook = XLSX.read(data, { type: 'array' });
+                      var sheet = workbook.Sheets[workbook.SheetNames[0]];
+                      var json = XLSX.utils.sheet_to_json(sheet);
+                      var newDetails = json.map(function(row) {
+                        var cat = categories.find(function(c) {
+                          return c.name === row.分项名称;
+                        });
+                        return {
+                          projectId: currentProjectId,
+                          detailName: row.详细名称 || '未命名',
+                          categoryId: cat ? cat.id : categories[0] ? categories[0].id || '1' : '1',
+                          budgetArea: parseFloat(row.预算面积) || null,
+                          budgetQuantity: parseFloat(row.预算用量) || 0,
+                          budgetCost: parseFloat(row.预算费用) || 0,
+                          currentQuantity: parseFloat(row.当前使用量) || 0,
+                          currentCost: parseFloat(row.当前使用费用) || 0,
+                          createdAt: new Date().toISOString(),
+                          progressItems: [],
+                          budgetItems: []
+                        };
+                      }).filter(function(d) {
+                        return d.detailName !== '未命名';
+                      });
+                      
+                      var batch = {};
+                      newDetails.forEach(function(detail) {
+                        var ref = db.ref('details').push();
+                        batch[ref.key] = detail;
+                      });
+                      
+                      db.ref('details').update(batch).then(function() {
+                        setDetails(function(prev) {
+                          return [...prev, ...Object.values(batch).map(function(d, i) {
+                            return { id: Object.keys(batch)[i], ...d };
+                          })];
+                        });
+                        
+                        var project = projects.find(function(p) {
+                          return p.id === currentProjectId;
+                        });
+                        
+                        if (project) {
+                          var totalUsed = [...details, ...Object.values(batch)].filter(function(d) {
+                            return d.projectId === currentProjectId;
+                          }).reduce(function(sum, d) {
+                            return sum + d.currentCost;
+                          }, 0);
+                          var progress = project.budgetValue > 0 ? totalUsed / project.budgetValue * 100 : 0;
+                          var updatedProject = { ...project, budgetUsed: totalUsed, progressPercent: progress };
+                          updateProject(updatedProject);
+                        }
+                        
+                        setImportModal(false);
+                        setFile(null);
+                        alert('导入成功！');
+                      });
+                    };
+                    reader.readAsArrayBuffer(file);
+                  },
+                  className: "flex-1 bg-blue-500 text-white py-2 rounded"
+                }, "确认导入")
+              )
+            )
+          ),
+          
+          progressModal && currentDetailId && React.createElement(ProgressModal, {
+            detailId: currentDetailId,
+            onClose: function() {
+              setProgressModal(false);
+              setCurrentDetailId(null);
+            }
+          }),
+          
+          budgetModal && currentDetailId && React.createElement(BudgetModal, {
+            detailId: currentDetailId,
+            onClose: function() {
+              setBudgetModal(false);
+              setCurrentDetailId(null);
+            }
+          }),
+          
+          manageUsers && React.createElement(UserManagement, {
+            onClose: function() { setManageUsers(false); },
+            user: user,
+            ADMIN_EMAILS: ADMIN_EMAILS
+          })
+        );
       }
 
-      function ProjectForm(_ref10) {
-        var onClose = _ref10.onClose,
-            onSubmit = _ref10.onSubmit,
-            projectStatuses = _ref10.projectStatuses,
-            initialData = _ref10.initialData;
-
+      function ProjectForm(props) {
+        var onClose = props.onClose;
+        var onSubmit = props.onSubmit;
+        var projectStatuses = props.projectStatuses;
+        var initialData = props.initialData;
+        
         var isEdit = !!initialData;
         var _useState32 = useState(initialData || {
           name: '',
           status: '项目规划中',
           budgetValue: ''
-        }),
-            formData = _useState32[0],
-            setFormData = _useState32[1];
-
-        var handleSubmit = function handleSubmit(e) {
+        });
+        var formData = _useState32[0];
+        var setFormData = _useState32[1];
+        
+        var handleSubmit = function(e) {
           e.preventDefault();
           onSubmit(formData);
           onClose();
         };
-
-        return /*#__PURE__*/React.createElement("div", {
-          className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "bg-white p-6 rounded-lg max-w-md w-full"
-        }, /*#__PURE__*/React.createElement("h3", {
-          className: "text-lg font-semibold mb-4"
-        }, isEdit ? '\u7F16\u8F91\u9879\u76EE' : '\u65B0\u589E\u9879\u76EE'), /*#__PURE__*/React.createElement("form", {
-          onSubmit: handleSubmit
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9879\u76EE\u540D\u79F0"), /*#__PURE__*/React.createElement("input", {
-          type: "text",
-          required: true,
-          value: formData.name,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              name: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9879\u76EE\u72B6\u6001"), /*#__PURE__*/React.createElement("select", {
-          value: formData.status,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              status: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        }, projectStatuses.map(function (s) {
-          return /*#__PURE__*/React.createElement("option", {
-            key: s,
-            value: s
-          }, s);
-        }))), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9879\u76EE\u9884\u7B97\u503C(\u5143)"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          required: true,
-          value: formData.budgetValue,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              budgetValue: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "flex gap-2 mt-6"
-        }, /*#__PURE__*/React.createElement("button", {
-          type: "button",
-          onClick: onClose,
-          className: "flex-1 bg-gray-300 text-black py-2 rounded"
-        }, "\u53D6\u6D88"), /*#__PURE__*/React.createElement("button", {
-          type: "submit",
-          className: "flex-1 bg-blue-500 text-white py-2 rounded"
-        }, isEdit ? '\u4FDD\u5B58' : '\u6DFB\u52A0'))));
+        
+        return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+          React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-md w-full" },
+            React.createElement("h3", { className: "text-lg font-semibold mb-4" }, 
+              isEdit ? "编辑项目" : "新增项目"
+            ),
+            React.createElement("form", { onSubmit: handleSubmit },
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "项目名称"),
+                React.createElement("input", {
+                  type: "text",
+                  required: true,
+                  value: formData.name,
+                  onChange: function(e) {
+                    setFormData({ ...formData, name: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "项目状态"),
+                React.createElement("select", {
+                  value: formData.status,
+                  onChange: function(e) {
+                    setFormData({ ...formData, status: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                },
+                  projectStatuses.map(function(s) {
+                    return React.createElement("option", { key: s, value: s }, s);
+                  })
+                )
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "项目预算值(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  required: true,
+                  value: formData.budgetValue,
+                  onChange: function(e) {
+                    setFormData({ ...formData, budgetValue: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "flex gap-2 mt-6" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: onClose,
+                  className: "flex-1 bg-gray-300 text-black py-2 rounded"
+                }, "取消"),
+                React.createElement("button", {
+                  type: "submit",
+                  className: "flex-1 bg-blue-500 text-white py-2 rounded"
+                }, isEdit ? "保存" : "添加")
+              )
+            )
+          )
+        );
       }
 
-      function DetailForm(_ref11) {
-        var onClose = _ref11.onClose,
-            onSubmit = _ref11.onSubmit,
-            categories = _ref11.categories,
-            initialData = _ref11.initialData,
-            isEdit = _ref11.isEdit;
-
-        var _useState33 = useState(initialData.id ? _objectSpread({}, initialData) : {
+      function DetailForm(props) {
+        var onClose = props.onClose;
+        var onSubmit = props.onSubmit;
+        var categories = props.categories;
+        var initialData = props.initialData;
+        var isEdit = props.isEdit;
+        
+        var _useState33 = useState(initialData.id ? { ...initialData } : {
           detailName: '',
           categoryId: categories[0] ? categories[0].id ? categories[0].id.toString() : '' : '',
           budgetArea: '',
@@ -1662,150 +1475,137 @@
           budgetCost: '',
           currentQuantity: '',
           currentCost: ''
-        }),
-            formData = _useState33[0],
-            setFormData = _useState33[1];
-
-        var handleSubmit = function handleSubmit(e) {
+        });
+        var formData = _useState33[0];
+        var setFormData = _useState33[1];
+        
+        var handleSubmit = function(e) {
           e.preventDefault();
           onSubmit(formData);
           onClose();
         };
-
-        return /*#__PURE__*/React.createElement("div", {
-          className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "bg-white p-6 rounded-lg max-w-md w-full"
-        }, /*#__PURE__*/React.createElement("h3", {
-          className: "text-lg font-semibold mb-4"
-        }, isEdit ? '\u7F16\u8F91\u660E\u7EC6' : '\u65B0\u589E\u660E\u7EC6'), /*#__PURE__*/React.createElement("form", {
-          onSubmit: handleSubmit
-        }, /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u8BE6\u7EC6\u540D\u79F0"), /*#__PURE__*/React.createElement("input", {
-          type: "text",
-          required: true,
-          value: formData.detailName,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              detailName: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2",
-          disabled: isEdit
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u5206\u9879\u540D\u79F0"), /*#__PURE__*/React.createElement("select", {
-          value: formData.categoryId,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              categoryId: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2",
-          required: true,
-          disabled: isEdit
-        }, categories.map(function (c) {
-          return /*#__PURE__*/React.createElement("option", {
-            key: c.id,
-            value: c.id
-          }, c.name);
-        }))), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9884\u7B97\u9762\u79EF(\u33A1)"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          step: "0.01",
-          value: formData.budgetArea,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              budgetArea: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9884\u7B97\u7528\u91CF"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          step: "0.01",
-          required: true,
-          value: formData.budgetQuantity,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              budgetQuantity: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u9884\u7B97\u8D39\u7528(\u5143)"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          step: "0.01",
-          required: true,
-          value: formData.budgetCost,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              budgetCost: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u5F53\u524D\u4F7F\u7528\u91CF"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          step: "0.01",
-          required: true,
-          value: formData.currentQuantity,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              currentQuantity: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "mb-4"
-        }, /*#__PURE__*/React.createElement("label", {
-          className: "block text-sm font-medium mb-1"
-        }, "\u5F53\u524D\u4F7F\u7528\u8D39\u7528(\u5143)"), /*#__PURE__*/React.createElement("input", {
-          type: "number",
-          step: "0.01",
-          required: true,
-          value: formData.currentCost,
-          onChange: function onChange(e) {
-            return setFormData(_objectSpread(_objectSpread({}, formData), {}, {
-              currentCost: e.target.value
-            }));
-          },
-          className: "w-full border rounded p-2"
-        })), /*#__PURE__*/React.createElement("div", {
-          className: "flex gap-2 mt-6"
-        }, /*#__PURE__*/React.createElement("button", {
-          type: "button",
-          onClick: onClose,
-          className: "flex-1 bg-gray-300 text-black py-2 rounded"
-        }, "\u53D6\u6D88"), /*#__PURE__*/React.createElement("button", {
-          type: "submit",
-          className: "flex-1 bg-blue-500 text-white py-2 rounded"
-        }, isEdit ? '\u4FDD\u5B58' : '\u6DFB\u52A0'))));
+        
+        return React.createElement("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" },
+          React.createElement("div", { className: "bg-white p-6 rounded-lg max-w-md w-full" },
+            React.createElement("h3", { className: "text-lg font-semibold mb-4" }, 
+              isEdit ? "编辑明细" : "新增明细"
+            ),
+            React.createElement("form", { onSubmit: handleSubmit },
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "详细名称"),
+                React.createElement("input", {
+                  type: "text",
+                  required: true,
+                  value: formData.detailName,
+                  onChange: function(e) {
+                    setFormData({ ...formData, detailName: e.target.value });
+                  },
+                  className: "w-full border rounded p-2",
+                  disabled: isEdit
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "分项名称"),
+                React.createElement("select", {
+                  value: formData.categoryId,
+                  onChange: function(e) {
+                    setFormData({ ...formData, categoryId: e.target.value });
+                  },
+                  className: "w-full border rounded p-2",
+                  required: true,
+                  disabled: isEdit
+                },
+                  categories.map(function(c) {
+                    return React.createElement("option", { key: c.id, value: c.id }, c.name);
+                  })
+                )
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "预算面积(㎡)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  value: formData.budgetArea,
+                  onChange: function(e) {
+                    setFormData({ ...formData, budgetArea: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "预算用量"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.budgetQuantity,
+                  onChange: function(e) {
+                    setFormData({ ...formData, budgetQuantity: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "预算费用(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.budgetCost,
+                  onChange: function(e) {
+                    setFormData({ ...formData, budgetCost: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "当前使用量"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.currentQuantity,
+                  onChange: function(e) {
+                    setFormData({ ...formData, currentQuantity: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "mb-4" },
+                React.createElement("label", { className: "block text-sm font-medium mb-1" }, "当前使用费用(元)"),
+                React.createElement("input", {
+                  type: "number",
+                  step: "0.01",
+                  required: true,
+                  value: formData.currentCost,
+                  onChange: function(e) {
+                    setFormData({ ...formData, currentCost: e.target.value });
+                  },
+                  className: "w-full border rounded p-2"
+                })
+              ),
+              React.createElement("div", { className: "flex gap-2 mt-6" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: onClose,
+                  className: "flex-1 bg-gray-300 text-black py-2 rounded"
+                }, "取消"),
+                React.createElement("button", {
+                  type: "submit",
+                  className: "flex-1 bg-blue-500 text-white py-2 rounded"
+                }, isEdit ? "保存" : "添加")
+              )
+            )
+          )
+        );
       }
 
-      // 关键修复：确保 createRoot 后无任何空字符，括号完全匹配
+      // 关键修复：确保 createRoot 调用完全正确
       try {
         var container = document.getElementById('root');
         if (container) {
           var root = ReactDOM.createRoot(container);
-          root.render( /*#__PURE__*/React.createElement(App, null));
+          root.render(React.createElement(App, null));
         }
       } catch (err) {
         console.error('渲染失败:', err);
